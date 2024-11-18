@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  backend
+Transform:
+  - AWS::Serverless-2016-10-31
+Resources:
+  UserGet:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/user_get.handler
+      Runtime: nodejs20.x
+      Events:
+        UserGet:
+          Type: Api
+          Properties:
+            Path: /user
+            Method: get
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'GET,OPTIONS'"
+
+  ListsGet:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/lists_get.handler
+      Runtime: nodejs20.x
+      Events:
+        ListsGet:
+          Type: Api
+          Properties:
+            Path: /lists
+            Method: get
+
+  ListPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/list_post.handler
+      Runtime: nodejs20.x
+      Events:
+        ListPost:
+          Type: Api
+          Properties:
+            Path: /list
+            Method: post
+
+  WordsPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/words_post.handler
+      Runtime: nodejs20.x
+      Events:
+        WordsPost:
+          Type: Api
+          Properties:
+            Path: /words
+            Method: post
+
+  WordPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/word_post.handler
+      Runtime: nodejs20.x
+      Events:
+        WordPost:
+          Type: Api
+          Properties:
+            Path: /word
+            Method: post
+
+  IncorrectListsGet:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/incorrectLists_get.handler
+      Runtime: nodejs20.x
+      Events:
+        IncorrectListsGet:
+          Type: Api
+          Properties:
+            Path: /incorrectLists
+            Method: get
+
+  IncorrectListPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/incorrectList_post.handler
+      Runtime: nodejs20.x
+      Events:
+        IncorrectListPost:
+          Type: Api
+          Properties:
+            Path: /incorrectList
+            Method: post
+
+  IncorrectWordsPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/incorrectWords_post.handler
+      Runtime: nodejs20.x
+      Events:
+        IncorrectWordsPost:
+          Type: Api
+          Properties:
+            Path: /incorrectWords
+            Method: post
+
+  IncorrectWordPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/incorrectWord_post.handler
+      Runtime: nodejs20.x
+      Events:
+        IncorrectWordPost:
+          Type: Api
+          Properties:
+            Path: /incorrectWord
+            Method: post
+  TestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/test.handler
+      Runtime: nodejs20.x
+      Events:
+        TestEvent:
+          Type: Api
+          Properties:
+            Path: /test
+            Method: get
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'GET,OPTIONS'"

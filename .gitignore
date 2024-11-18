@@ -1,0 +1,28 @@
+# AWS SAM build artifacts
+.aws-sam/
+
+# AWS Lambda .env or configuration files (optional)
+.env
+
+# Node.js dependencies
+node_modules/
+
+# npm logs
+npm-debug.log
+yarn-error.log
+
+# VSCode settings
+.vscode/
+
+# macOS Finder folder settings
+.DS_Store
+
+# Operating system generated files
+Thumbs.db
+desktop.ini
+
+# Local environment files (for example, local secrets or database credentials)
+*.env
+
+# local env json
+env.json
