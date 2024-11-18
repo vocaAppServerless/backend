@@ -7,7 +7,7 @@ Resources:
   UserGet:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/user_get.handler
+      Handler: src/handlers/getUser.handler
       Runtime: nodejs20.x
       Events:
         UserGet:
@@ -18,11 +18,12 @@ Resources:
             Cors:
               AllowOrigins: "'*'"
               AllowMethods: "'GET,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   ListsGet:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/lists_get.handler
+      Handler: src/handlers/getLists.handler
       Runtime: nodejs20.x
       Events:
         ListsGet:
@@ -30,11 +31,15 @@ Resources:
           Properties:
             Path: /lists
             Method: get
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'GET,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   ListPost:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/list_post.handler
+      Handler: src/handlers/postList.handler
       Runtime: nodejs20.x
       Events:
         ListPost:
@@ -42,11 +47,15 @@ Resources:
           Properties:
             Path: /list
             Method: post
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   WordsPost:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/words_post.handler
+      Handler: src/handlers/postWords.handler
       Runtime: nodejs20.x
       Events:
         WordsPost:
@@ -54,11 +63,15 @@ Resources:
           Properties:
             Path: /words
             Method: post
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   WordPost:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/word_post.handler
+      Handler: src/handlers/postWord.handler
       Runtime: nodejs20.x
       Events:
         WordPost:
@@ -66,11 +79,15 @@ Resources:
           Properties:
             Path: /word
             Method: post
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   IncorrectListsGet:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/incorrectLists_get.handler
+      Handler: src/handlers/getIncorrectLists.handler
       Runtime: nodejs20.x
       Events:
         IncorrectListsGet:
@@ -78,11 +95,15 @@ Resources:
           Properties:
             Path: /incorrectLists
             Method: get
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'GET,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   IncorrectListPost:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/incorrectList_post.handler
+      Handler: src/handlers/postIncorrectList.handler
       Runtime: nodejs20.x
       Events:
         IncorrectListPost:
@@ -90,11 +111,15 @@ Resources:
           Properties:
             Path: /incorrectList
             Method: post
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   IncorrectWordsPost:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/incorrectWords_post.handler
+      Handler: src/handlers/postIncorrectWords.handler
       Runtime: nodejs20.x
       Events:
         IncorrectWordsPost:
@@ -102,11 +127,15 @@ Resources:
           Properties:
             Path: /incorrectWords
             Method: post
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   IncorrectWordPost:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/incorrectWord_post.handler
+      Handler: src/handlers/postIncorrectWord.handler
       Runtime: nodejs20.x
       Events:
         IncorrectWordPost:
@@ -114,6 +143,11 @@ Resources:
           Properties:
             Path: /incorrectWord
             Method: post
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
+
   TestFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -128,3 +162,4 @@ Resources:
             Cors:
               AllowOrigins: "'*'"
               AllowMethods: "'GET,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
