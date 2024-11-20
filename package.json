@@ -4,6 +4,7 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
+        "@aws-sdk/client-secrets-manager": "^3.696.0",
         "dotenv": "^16.4.5",
         "mongodb": "^6.10.0"
     },
