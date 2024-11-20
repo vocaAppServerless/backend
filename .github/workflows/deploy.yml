@@ -29,6 +29,7 @@ jobs:
           - postIncorrectList
           - postIncorrectWords
           - postIncorrectWord
+          - test
 
     steps:
     - name: Checkout code
