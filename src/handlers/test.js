@@ -68,7 +68,6 @@ const chooseDbUri = async () => {
 };
 
 exports.handler = async (event) => {
-  console.log("invoke!!여기야1");
   const requestType = event.queryStringParameters?.request;
   let dbUri = await chooseDbUri();
 
