@@ -46,7 +46,7 @@ jobs:
     
     - name: Update Layer ARN in Parameter Store
       run: |
-        aws ssm put-parameter --name "/remember-me/lambda_layer_arn" --value "$LAYER_VERSION_ARN" --overwrite
+        aws ssm put-parameter --name "/remember-me/lambda_layer_arn" --type "String" --value "$LAYER_VERSION_ARN" --overwrite
 
   deploy:
     runs-on: ubuntu-latest
