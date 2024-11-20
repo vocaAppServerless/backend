@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'src/handlers/**'
+      - 'layer.zip'
   workflow_dispatch:
 
 env:
@@ -14,6 +15,39 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
+  update-layer:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Get Lambda Layer Name from Parameter Store
+      id: get-layer-name
+      run: |
+        LAYER_NAME=$(aws ssm get-parameter --name "/remember-me/lambda_layer_name" --query 'Parameter.Value' --output text)
+        echo "LAYER_NAME=$LAYER_NAME" >> $GITHUB_ENV
+
+    - name: Update Lambda Layer
+      run: |
+        LAYER_VERSION_ARN=$(aws lambda publish-layer-version \
+          --layer-name "$LAYER_NAME" \
+          --zip-file fileb://layer.zip \
+          --compatible-runtimes nodejs20.x \
+          --query 'LayerVersionArn' \
+          --output text)
+        echo "LAYER_VERSION_ARN=$LAYER_VERSION_ARN" >> $GITHUB_ENV
+    
+    - name: Update Layer ARN in Parameter Store
+      run: |
+        aws ssm put-parameter --name "/remember-me/lambda_layer_arn" --value "$LAYER_VERSION_ARN" --overwrite
+
   deploy:
     runs-on: ubuntu-latest
     
@@ -52,6 +86,17 @@ jobs:
 
     # - name: Run Tests
     #   run: npm test
+    
+    - name: Update Lambda Layer
+      if: ${{ matrix.lambda-function == 'getUser' }}
+      run: |
+        LAYER_VERSION_ARN=$(aws lambda publish-layer-version \
+          --layer-name voca_app_lambda_layer \
+          --zip-file fileb//layer.zip \
+          --compatible-runtimes nodejs20.x \
+          --query 'LayerVersionArn' \
+          --output text)
+        echo "LAYER_VERSION_ARN=$LAYER_VERSION_ARN" >> $GITHUB_ENV
 
     - name: Zip Lambda Function
       run: |
@@ -63,3 +108,15 @@ jobs:
         aws lambda update-function-code \
           --function-name ${{ matrix.lambda-function }} \
           --zip-file fileb://./templates/lambda/lambda_code.zip
+    
+    # Lambda 함수에 새로운 레이어 버전 적용
+    - name: Get Lambda Layer ARN from Parameter Store
+      run: |
+        LAYER_VERSION_ARN=$(aws ssm get-parameter --name "/remember-me/lambda_layer_arn" --query 'Parameter.Value' --output text)
+        echo "LAYER_VERSION_ARN=$LAYER_VERSION_ARN" >> $GITHUB_ENV
+
+    - name: Update Lambda Function Configuration
+      run: |
+        aws lambda update-function-configuration \
+          --function-name ${{ matrix.lambda-function }} \
+          --layers "$LAYER_VERSION_ARN"
