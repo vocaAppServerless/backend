@@ -153,6 +153,7 @@ Resources:
     Properties:
       Handler: src/handlers/test.handler
       Runtime: nodejs20.x
+      Timeout: 30 # 타임아웃을 30초로 설정
       Events:
         TestEvent:
           Type: Api
