@@ -4,156 +4,163 @@ Description: >-
 Transform:
   - AWS::Serverless-2016-10-31
 Resources:
-  UserGet:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/getUser.handler
-      Runtime: nodejs20.x
-      Events:
-        UserGet:
-          Type: Api
-          Properties:
-            Path: /user
-            Method: get
-            Cors:
-              AllowOrigins: "'*'"
-              AllowMethods: "'GET,OPTIONS'"
-              AllowHeaders: "'Content-Type'"
+  # UserGet:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: src/handlers/getUser.handler
+  #     Runtime: nodejs20.x
+  #     Events:
+  #       UserGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /user
+  #           Method: get
+  #           Cors:
+  #             AllowOrigins: "'*'"
+  #             AllowMethods: "'GET,OPTIONS'"
+  #             AllowHeaders: "'Content-Type'"
 
-  ListsGet:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/getLists.handler
-      Runtime: nodejs20.x
-      Events:
-        ListsGet:
-          Type: Api
-          Properties:
-            Path: /lists
-            Method: get
-            Cors:
-              AllowOrigins: "'*'"
-              AllowMethods: "'GET,OPTIONS'"
-              AllowHeaders: "'Content-Type'"
+  # ListsGet:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: src/handlers/getLists.handler
+  #     Runtime: nodejs20.x
+  #     Events:
+  #       ListsGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /lists
+  #           Method: get
+  #           Cors:
+  #             AllowOrigins: "'*'"
+  #             AllowMethods: "'GET,OPTIONS'"
+  #             AllowHeaders: "'Content-Type'"
 
-  ListPost:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/postList.handler
-      Runtime: nodejs20.x
-      Events:
-        ListPost:
-          Type: Api
-          Properties:
-            Path: /list
-            Method: post
-            Cors:
-              AllowOrigins: "'*'"
-              AllowMethods: "'POST,OPTIONS'"
-              AllowHeaders: "'Content-Type'"
+  # ListPost:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: src/handlers/postList.handler
+  #     Runtime: nodejs20.x
+  #     Events:
+  #       ListPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /list
+  #           Method: post
+  #           Cors:
+  #             AllowOrigins: "'*'"
+  #             AllowMethods: "'POST,OPTIONS'"
+  #             AllowHeaders: "'Content-Type'"
 
-  WordsPost:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/postWords.handler
-      Runtime: nodejs20.x
-      Events:
-        WordsPost:
-          Type: Api
-          Properties:
-            Path: /words
-            Method: post
-            Cors:
-              AllowOrigins: "'*'"
-              AllowMethods: "'POST,OPTIONS'"
-              AllowHeaders: "'Content-Type'"
+  # WordsPost:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: src/handlers/postWords.handler
+  #     Runtime: nodejs20.x
+  #     Events:
+  #       WordsPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /words
+  #           Method: post
+  #           Cors:
+  #             AllowOrigins: "'*'"
+  #             AllowMethods: "'POST,OPTIONS'"
+  #             AllowHeaders: "'Content-Type'"
 
-  WordPost:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/postWord.handler
-      Runtime: nodejs20.x
-      Events:
-        WordPost:
-          Type: Api
-          Properties:
-            Path: /word
-            Method: post
-            Cors:
-              AllowOrigins: "'*'"
-              AllowMethods: "'POST,OPTIONS'"
-              AllowHeaders: "'Content-Type'"
+  # WordPost:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: src/handlers/postWord.handler
+  #     Runtime: nodejs20.x
+  #     Events:
+  #       WordPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /word
+  #           Method: post
+  #           Cors:
+  #             AllowOrigins: "'*'"
+  #             AllowMethods: "'POST,OPTIONS'"
+  #             AllowHeaders: "'Content-Type'"
 
-  IncorrectListsGet:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/getIncorrectLists.handler
-      Runtime: nodejs20.x
-      Events:
-        IncorrectListsGet:
-          Type: Api
-          Properties:
-            Path: /incorrectLists
-            Method: get
-            Cors:
-              AllowOrigins: "'*'"
-              AllowMethods: "'GET,OPTIONS'"
-              AllowHeaders: "'Content-Type'"
+  # IncorrectListsGet:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: src/handlers/getIncorrectLists.handler
+  #     Runtime: nodejs20.x
+  #     Events:
+  #       IncorrectListsGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /incorrectLists
+  #           Method: get
+  #           Cors:
+  #             AllowOrigins: "'*'"
+  #             AllowMethods: "'GET,OPTIONS'"
+  #             AllowHeaders: "'Content-Type'"
 
-  IncorrectListPost:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/postIncorrectList.handler
-      Runtime: nodejs20.x
-      Events:
-        IncorrectListPost:
-          Type: Api
-          Properties:
-            Path: /incorrectList
-            Method: post
-            Cors:
-              AllowOrigins: "'*'"
-              AllowMethods: "'POST,OPTIONS'"
-              AllowHeaders: "'Content-Type'"
+  # IncorrectListPost:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: src/handlers/postIncorrectList.handler
+  #     Runtime: nodejs20.x
+  #     Events:
+  #       IncorrectListPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /incorrectList
+  #           Method: post
+  #           Cors:
+  #             AllowOrigins: "'*'"
+  #             AllowMethods: "'POST,OPTIONS'"
+  #             AllowHeaders: "'Content-Type'"
 
-  IncorrectWordsPost:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/postIncorrectWords.handler
-      Runtime: nodejs20.x
-      Events:
-        IncorrectWordsPost:
-          Type: Api
-          Properties:
-            Path: /incorrectWords
-            Method: post
-            Cors:
-              AllowOrigins: "'*'"
-              AllowMethods: "'POST,OPTIONS'"
-              AllowHeaders: "'Content-Type'"
+  # IncorrectWordsPost:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: src/handlers/postIncorrectWords.handler
+  #     Runtime: nodejs20.x
+  #     Events:
+  #       IncorrectWordsPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /incorrectWords
+  #           Method: post
+  #           Cors:
+  #             AllowOrigins: "'*'"
+  #             AllowMethods: "'POST,OPTIONS'"
+  #             AllowHeaders: "'Content-Type'"
 
-  IncorrectWordPost:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/postIncorrectWord.handler
-      Runtime: nodejs20.x
-      Events:
-        IncorrectWordPost:
-          Type: Api
-          Properties:
-            Path: /incorrectWord
-            Method: post
-            Cors:
-              AllowOrigins: "'*'"
-              AllowMethods: "'POST,OPTIONS'"
-              AllowHeaders: "'Content-Type'"
+  # IncorrectWordPost:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: src/handlers/postIncorrectWord.handler
+  #     Runtime: nodejs20.x
+  #     Events:
+  #       IncorrectWordPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /incorrectWord
+  #           Method: post
+  #           Cors:
+  #             AllowOrigins: "'*'"
+  #             AllowMethods: "'POST,OPTIONS'"
+  #             AllowHeaders: "'Content-Type'"
 
   TestFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: src/handlers/test.handler
       Runtime: nodejs20.x
-      Timeout: 30 # 타임아웃을 30초로 설정
+      Timeout: 10  # 타임아웃 시간을 10초로 설정
+      Environment:
+        Variables:
+          MONGODB_USER: !Ref MONGODB_USER
+          MONGODB_PASSWORD: !Ref MONGODB_PASSWORD
+          MONGODB_HOST: !Ref MONGODB_HOST
+          MONGODB_PORT: !Ref MONGODB_PORT
+          MONGODB_DB: !Ref MONGODB_DB
       Events:
         TestEvent:
           Type: Api
