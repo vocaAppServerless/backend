@@ -108,8 +108,8 @@ exports.handler = async (event) => {
     };
   } else {
     return {
-      statusCode: 200,
-      body: JSON.stringify(dbUri),
+      statusCode: 400,
+      body: JSON.stringify({ message: "inavailable" }),
     };
   }
 };
