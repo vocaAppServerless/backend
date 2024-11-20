@@ -86,17 +86,6 @@ jobs:
 
     # - name: Run Tests
     #   run: npm test
-    
-    - name: Update Lambda Layer
-      if: ${{ matrix.lambda-function == 'getUser' }}
-      run: |
-        LAYER_VERSION_ARN=$(aws lambda publish-layer-version \
-          --layer-name voca_app_lambda_layer \
-          --zip-file fileb//layer.zip \
-          --compatible-runtimes nodejs20.x \
-          --query 'LayerVersionArn' \
-          --output text)
-        echo "LAYER_VERSION_ARN=$LAYER_VERSION_ARN" >> $GITHUB_ENV
 
     - name: Zip Lambda Function
       run: |
