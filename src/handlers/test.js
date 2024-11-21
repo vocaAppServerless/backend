@@ -17,6 +17,13 @@ let client;
 
 console.log(env, "여기");
 
+const headers = {
+  "Access-Control-Allow-Origin": "*", // 모든 도메인 허용 (보안을 위해 특정 도메인으로 제한 가능)
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS", // 허용할 HTTP 메서드
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Amz-Date, X-Api-Key", // 허용할 헤더들
+};
+
 // 실행
 
 const getSecretValue = async (client, secretName) => {
@@ -85,6 +92,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         body: JSON.stringify({ collections: collectionNames }),
+        headers,
       };
     } catch (error) {
       console.error("Error retrieving collections:", error);
@@ -92,8 +100,8 @@ exports.handler = async (event) => {
         statusCode: 500,
         body: JSON.stringify({
           message: "Failed to fetch collections",
-          error: error.message,
         }),
+        headers,
       };
     } finally {
       if (client) {
@@ -104,11 +112,13 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       body: JSON.stringify({ message: "This is the connectLambda response!" }),
+      headers,
     };
   } else {
     return {
       statusCode: 400,
       body: JSON.stringify({ message: "inavailable" }),
+      headers,
     };
   }
 };
