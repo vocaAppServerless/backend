@@ -1,5 +1,3 @@
-// handler.js
-
 require("dotenv").config();
 let getSecretAndDbUri, getMongoClient;
 
