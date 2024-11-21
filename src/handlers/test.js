@@ -1,13 +1,7 @@
-require("dotenv").config();
-let getSecretAndDbUri, getMongoClient;
-
-if (process.env.ENV) {
-  // 로컬 환경일 경우 dbHelper.js 직접 가져오기
-  ({ getSecretAndDbUri, getMongoClient } = require("./dbHelper.js"));
-} else {
-  // 다른 환경일 경우 muzzi-helper의 dbHelper 모듈 가져오기
-  ({ getSecretAndDbUri, getMongoClient } = require("muzzi-helper/dbHelper"));
-}
+const {
+  getSecretAndDbUri,
+  getMongoClient,
+} = require("@nurdworker/rememberme-dbhelper");
 
 exports.handler = async (event) => {
   const requestType = event.queryStringParameters?.request;
