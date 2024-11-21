@@ -17,8 +17,6 @@ let client;
 
 console.log(env, "여기");
 
-
-
 // 실행
 
 const getSecretValue = async (client, secretName) => {
@@ -111,4 +109,5 @@ exports.handler = async (event) => {
       statusCode: 400,
       body: JSON.stringify({ message: "inavailable" }),
     };
+  }
 };
