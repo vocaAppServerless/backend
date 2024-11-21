@@ -1,5 +1,8 @@
 // handler.js
-const { getSecretAndDbUri, getMongoClient } = require("./dbHelper");
+const {
+  getSecretAndDbUri,
+  getMongoClient,
+} = require("muzzi-db-helper/dbHelpers");
 
 exports.handler = async (event) => {
   const requestType = event.queryStringParameters?.request;
