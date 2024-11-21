@@ -153,9 +153,10 @@ Resources:
     Properties:
       Handler: src/handlers/test.handler
       Runtime: nodejs20.x
-      Timeout: 10  # 타임아웃 시간을 10초로 설정
+      Timeout: 10 # 타임아웃 시간을 10초로 설정
       Environment:
         Variables:
+          ENV: !Ref ENV
           MONGODB_USER: !Ref MONGODB_USER
           MONGODB_PASSWORD: !Ref MONGODB_PASSWORD
           MONGODB_HOST: !Ref MONGODB_HOST
