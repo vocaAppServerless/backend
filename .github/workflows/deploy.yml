@@ -97,7 +97,13 @@ jobs:
         aws lambda update-function-code \
           --function-name ${{ matrix.lambda-function }} \
           --zip-file fileb://./templates/lambda/lambda_code.zip
-    
+
+    # 위의 업데이트 작업이 진행 중 람다 layer를 업데이트를 시도할시 충돌이 발생. 이를 해결하기 위해 추가
+    - name: Wait for Lambda Function Update
+      run: |
+        aws lambda wait function-updated \
+          --function-name ${{ matrix.lambda-function }}
+
     # Lambda 함수에 새로운 레이어 버전 적용
     - name: Get Lambda Layer ARN from Parameter Store
       run: |
