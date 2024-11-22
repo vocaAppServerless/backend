@@ -18,7 +18,7 @@ exports.handler = async (event) => {
     try {
       cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
       cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
-      const collections = await db.listCollections().toArray();
+      const collections = await cachedDb.listCollections().toArray();
       const collectionNames = collections.map((col) => col.name);
 
       return {
