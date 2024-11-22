@@ -114,4 +114,5 @@ jobs:
       run: |
         aws lambda update-function-configuration \
           --function-name ${{ matrix.lambda-function }} \
-          --layers "$LAYER_VERSION_ARN"
+          --layers "$LAYER_VERSION_ARN" \
+          --environment Variables={AWS_DEV_SECRET_NAME=${{ secrets.AWS_DEV_SECRET_NAME }}, AWS_DEV_SECRET_REGION=${{ secrets.AWS_DEV_SECRET_REGION }}}
