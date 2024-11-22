@@ -1,4 +1,4 @@
-//test.js
+//test.jsd
 const { checkCachedSecrets, getDb } = require("@nurdworker/rbm-helper");
 
 let cachedSecrets = {};
