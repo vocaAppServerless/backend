@@ -1,8 +1,9 @@
-//test.js 4
 const { checkCachedSecrets, getDb } = require("@nurdworker/rbm-helper");
 
 let cachedSecrets = {};
 let cachedDb = null;
+
+console.log("하잉");
 
 exports.handler = async (event) => {
   const requestType = event.queryStringParameters?.request;
@@ -16,7 +17,7 @@ exports.handler = async (event) => {
   if (requestType === "connectDb") {
     try {
       cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
-      const db = (await getDb(cachedDb, cachedSecrets)).db;
+      cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
       const collections = await db.listCollections().toArray();
       const collectionNames = collections.map((col) => col.name);
 
