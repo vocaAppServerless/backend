@@ -1,4 +1,5 @@
 const {
+  getSecrets,
   checkCachedSecrets,
   getDb,
   auth: {
@@ -20,6 +21,8 @@ const {
 // } = require("./rbm-helper");
 
 // cached data
+
+console.log(getSecrets())
 
 let cachedSecrets = {};
 let cachedDb = null;

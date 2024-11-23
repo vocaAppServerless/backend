@@ -19,6 +19,8 @@ const {
 let cachedSecrets = {};
 let cachedDb = null;
 
+console.log()
+
 // Handle existing user flow: check if user is banned or not, and respond accordingly
 const handleExistingUser = async (existingUser, userInfo, tokens) => {
   const user_id = existingUser._id;
