@@ -1,205 +1,167 @@
-const { MongoClient } = require("mongodb");
 const {
-  SecretsManagerClient,
-  GetSecretValueCommand,
-} = require("@aws-sdk/client-secrets-manager");
-require("dotenv").config();
+  checkCachedSecrets,
+  getDb,
+  auth: { getSignData },
+  apiResource: { respond },
+} = require("@nurdworker/rbm-helper");
 
-// 환경변수 설정
-const env = process.env.ENV;
-const user = process.env.MONGODB_USER;
-const password = process.env.MONGODB_PASSWORD;
-const host = process.env.MONGODB_HOST;
-const port = process.env.MONGODB_PORT;
-const dbName = process.env.MONGODB_DB;
-let client;
+// const {
+//   checkCachedSecrets,
+//   getDb,
+//   auth: {
+//     getGoogleTokensByOauthCode,
+//     getGoogleUserInfoByAccessToken,
+//     getSignData,
+//   },
+//   apiResource: { respond },
+// } = require("./rbm-helper");
 
-// 비밀번호 및 기타 MongoDB 접속 정보
-let secret;
+let cachedSecrets = {};
+let cachedDb = null;
 
-const getSecretValue = async (client, secretName) => {
-  try {
-    const data = await client.send(
-      new GetSecretValueCommand({
-        SecretId: secretName,
-        VersionStage: "AWSCURRENT",
-      })
-    );
-    if (data.SecretString) {
-      secret = JSON.parse(data.SecretString);
-      return secret;
-    } else {
-      const buff = Buffer.from(data.SecretBinary, "base64");
-      secret = JSON.parse(buff.toString("ascii"));
-      return secret;
-    }
-  } catch (error) {
-    console.error("Error retrieving secret: ", error);
-    throw new Error("Unable to retrieve secret value");
-  }
-};
+// Handle existing user flow: check if user is banned or not, and respond accordingly
+const handleExistingUser = async (existingUser, userInfo, tokens) => {
+  const user_id = existingUser._id;
+  const is_banned = existingUser.is_banned;
 
-// MongoDB URI 선택
-const chooseDbUri = async () => {
-  try {
-    if (env === "dev") {
-      return `mongodb://${user}:${password}@host.docker.internal:${port}/${dbName}`;
-    } else {
-      const secretName = "eng_voca/mongodb";
-      const region = "ap-northeast-2";
-      client = new SecretsManagerClient({ region });
-
-      const secret = await getSecretValue(client, secretName);
-      return `mongodb://${secret.MONGODB_USER}:${encodeURIComponent(
-        secret.MONGODB_PASSWORD
-      )}@${secret.MONGODB_HOST}:${secret.MONGODB_PORT}/${dbName}`;
-    }
-  } catch (error) {
-    console.error("Error in chooseDbUri: ", error);
-    throw new Error("Error while choosing DB URI");
-  }
-};
-
-// MongoDB 연결 후 사용자 정보 조회
-const getUserByEmail = async (email) => {
-  let dbUri = await chooseDbUri();
-  const mongoClient = new MongoClient(dbUri);
-
-  try {
-    await mongoClient.connect();
-    const db = mongoClient.db(dbName);
-    const usersCollection = db.collection("users");
-
-    // 이메일로 사용자 조회
-    const user = await usersCollection.findOne({ email });
-
-    return user;
-  } catch (error) {
-    console.error("Error fetching user by email:", error);
-    throw new Error("Error fetching user from MongoDB");
-  } finally {
-    await mongoClient.close();
-  }
-};
-
-// 사용자를 가입/로그인/차단 처리
-const handleUserAuth = async (email, accessToken, refreshToken) => {
-  const user = await getUserByEmail(email);
-
-  if (user) {
-    if (user.isBanned) {
-      // 차단된 사용자 처리
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          authResponse: "get out",
-          email: email,
-        }),
-      };
-    } else {
-      // 기존 사용자 로그인 성공
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          authResponse: "signIn success",
-          email: email,
-          tokens: { access_token: accessToken, refresh_token: refreshToken },
-        }),
-      };
-    }
+  if (is_banned) {
+    // User is banned, respond with "get out!"
+    return respond(200, {
+      authResponse: "get out!",
+      userInfo: { email: userInfo.email },
+    });
   } else {
-    // 비회원 처리 (회원가입)
-    const newUser = {
-      email: email,
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-      isBanned: false, // 기본적으로 가입 시 차단되지 않음
-      createdAt: new Date().toISOString(),
-    };
-
-    // DB에 새 사용자 추가
-    await signUpUser(newUser);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        authResponse: "signUp success",
-        email: email,
-        tokens: { access_token: accessToken, refresh_token: refreshToken },
-      }),
-    };
+    // User is not banned, respond with "signIn success!"
+    return respond(200, {
+      authResponse: "signIn success!",
+      userInfo: {
+        email: userInfo.email,
+        picture: userInfo.picture,
+        user_id,
+      },
+      tokens: {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+      },
+    });
   }
 };
 
-// 새 사용자 가입 처리
-const signUpUser = async (user) => {
-  let dbUri = await chooseDbUri();
-  const mongoClient = new MongoClient(dbUri);
+// Handle new user flow: create a new user and respond with success
+const handleNewUser = async (userInfo, tokens) => {
+  const userCollection = cachedDb.collection("users");
+  const newUser = {
+    email: userInfo.email,
+    name: userInfo.name,
+    picture: userInfo.picture,
+    creation_date: new Date(),
+    is_banned: false,
+  };
 
+  const user_id = (await userCollection.insertOne(newUser)).insertedId;
+  return respond(200, {
+    authResponse: "signUp success",
+    userInfo: { email: userInfo.email, picture: userInfo.picture, user_id },
+    tokens: {
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+    },
+  });
+};
+
+// Retrieve client ID and redirect URI
+const getClientIdAndRedirectUri = async () => {
   try {
-    await mongoClient.connect();
-    const db = mongoClient.db(dbName);
-    const usersCollection = db.collection("users");
-
-    await usersCollection.insertOne(user);
+    cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
+    const { clientId, redirectUri } = cachedSecrets.oauthSecret;
+    if (clientId && redirectUri) {
+      const authResponse = "success to get client id and redirect uri";
+      return respond(200, { authResponse, clientId, redirectUri });
+    }
+    throw new Error("missing value from getClientIdAndRedirectUri at getUser");
   } catch (error) {
-    console.error("Error signing up user to DB:", error);
-    throw new Error("Error signing up user");
-  } finally {
-    await mongoClient.close();
+    console.error("Error on getClientIdAndRedirectUri:", error);
+    return respond(500, { message: error.message });
   }
 };
 
-exports.handler = async (event) => {
-  const queryParams = event.queryStringParameters;
-  const requestType = queryParams.request;
-  const authCode = queryParams.authCode;
-  let response = { statusCode: 400, body: "Invalid request" };
-
+// Sign-up or Sign-in flow based on the existing user data
+const signUpOrSignIn = async (event) => {
   try {
-    if (requestType === "clientId") {
-      // 클라이언트 ID 요청 처리
-      response = {
-        statusCode: 200,
-        body: JSON.stringify({
-          authResponse: "getClientId success",
-          clientId: process.env.GOOGLE_CLIENT_ID,
-        }),
-      };
-    } else if (requestType === "sign") {
-      if (!authCode) {
-        throw new Error("authCode is required");
+    // Check db, secret casing
+    cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
+    cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
+
+    // Arrange necessary data
+    const oauthCode = event.headers?.oauthCode;
+    const codeVerifier = event.headers?.codeVerifier;
+    const { clientId, clientSecret, redirectUri } = cachedSecrets.oauthSecret;
+
+    //check necessary data
+    if (
+      !oauthCode ||
+      !codeVerifier ||
+      !clientId ||
+      !clientSecret ||
+      !redirectUri
+    ) {
+      return respond(400, { message: "Missing required data in the request" });
+    }
+
+    // Sign flow
+    if (oauthCode && codeVerifier && clientId && clientSecret && redirectUri) {
+      try {
+        const signData = await getSignData(
+          oauthCode,
+          clientId,
+          clientSecret,
+          redirectUri,
+          codeVerifier
+        );
+
+        //find User data from database
+        const { userInfo, tokens } = signData;
+        const userCollection = cachedDb.collection("users");
+        const existingUser = await userCollection.findOne({
+          email: userInfo.email,
+        });
+
+        if (existingUser) {
+          // User already exists, handle existing user flow
+          return handleExistingUser(existingUser, userInfo, tokens);
+        } else {
+          // New user, handle sign-up flow
+          return handleNewUser(userInfo, tokens);
+        }
+      } catch (error) {
+        console.error("Error during sign flow:", error);
+        return respond(500, { message: "Internal server error" });
       }
-
-      // 인증 코드를 통해 구글 API로 토큰 요청 및 사용자 확인
-      // 이 부분은 실제 구현에 따라 다를 수 있습니다.
-      const { accessToken, refreshToken, email } = await getGoogleTokens(
-        authCode
-      );
-
-      // 사용자 처리 (로그인/가입/차단)
-      response = await handleUserAuth(email, accessToken, refreshToken);
     } else {
-      throw new Error("Invalid request type");
+      // Missing necessary data, reject the request
+      return respond(400, {
+        message: "there is empty auth data from signUpOrSignIn at getUser",
+      });
     }
   } catch (error) {
-    console.error("Error in handler:", error);
-    response = {
+    console.error("Error on sign up/sign in:", error);
+    return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ message: "Failed on sign" }),
+      headers,
     };
   }
-
-  return response;
 };
 
-// 인증 코드로 구글 토큰 받기 (예시)
-const getGoogleTokens = async (authCode) => {
-  // 실제 구글 API와의 연동을 통해 토큰을 받아오는 로직을 작성해야 합니다.
-  // 이 예시에서는 가상의 데이터로 대체합니다.
-  const accessToken = "sampleAccessToken";
-  const refreshToken = "sampleRefreshToken";
-  const email = "user@example.com"; // 구글 토큰에서 이메일을 추출하는 로직이 필요함.
-
-  return { accessToken, refreshToken, email };
+// Main handler function to process requests based on query params
+exports.handler = async (event) => {
+  const requestType = event.queryStringParameters?.request;
+  switch (requestType) {
+    case "getClientIdAndRedirectUri":
+      return getClientIdAndRedirectUri();
+    case "sign":
+      return signUpOrSignIn(event);
+    default:
+      return respond(400, { message: "Invalid request from user get lambda" });
+  }
 };

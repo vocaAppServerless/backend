@@ -3,22 +3,53 @@ Description: >-
   backend
 Transform:
   - AWS::Serverless-2016-10-31
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 10 # 타임아웃 시간을 10초로 설정
+    Environment:
+      Variables:
+        ENV: !Ref ENV
+        MONGODB_USER: !Ref MONGODB_USER
+        MONGODB_PASSWORD: !Ref MONGODB_PASSWORD
+        MONGODB_HOST: !Ref MONGODB_HOST
+        MONGODB_PORT: !Ref MONGODB_PORT
+        MONGODB_DB: !Ref MONGODB_DB
+        OAUTH_CLIENT_ID: !Ref OAUTH_CLIENT_ID
+        OAUTH_CLIENT_SECRET: !Ref OAUTH_CLIENT_SECRET
+        OAUTH_REDIRECT_URI: !Ref OAUTH_REDIRECT_URI
 Resources:
-  # UserGet:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     Handler: src/handlers/getUser.handler
-  #     Runtime: nodejs20.x
-  #     Events:
-  #       UserGet:
-  #         Type: Api
-  #         Properties:
-  #           Path: /user
-  #           Method: get
-  #           Cors:
-  #             AllowOrigins: "'*'"
-  #             AllowMethods: "'GET,OPTIONS'"
-  #             AllowHeaders: "'Content-Type'"
+  TestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/test.handler
+      Runtime: nodejs20.x
+      Timeout: 10 # 타임아웃 시간을 10초로 설정
+      Events:
+        TestEvent:
+          Type: Api
+          Properties:
+            Path: /test
+            Method: get
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'GET,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
+  UserGet:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/getUser.handler
+      Runtime: nodejs20.x
+      Events:
+        UserGet:
+          Type: Api
+          Properties:
+            Path: /user
+            Method: get
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'GET,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   # ListsGet:
   #   Type: AWS::Serverless::Function
@@ -147,28 +178,3 @@ Resources:
   #             AllowOrigins: "'*'"
   #             AllowMethods: "'POST,OPTIONS'"
   #             AllowHeaders: "'Content-Type'"
-
-  TestFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/test.handler
-      Runtime: nodejs20.x
-      Timeout: 10 # 타임아웃 시간을 10초로 설정
-      Environment:
-        Variables:
-          ENV: !Ref ENV
-          MONGODB_USER: !Ref MONGODB_USER
-          MONGODB_PASSWORD: !Ref MONGODB_PASSWORD
-          MONGODB_HOST: !Ref MONGODB_HOST
-          MONGODB_PORT: !Ref MONGODB_PORT
-          MONGODB_DB: !Ref MONGODB_DB
-      Events:
-        TestEvent:
-          Type: Api
-          Properties:
-            Path: /test
-            Method: get
-            Cors:
-              AllowOrigins: "'*'"
-              AllowMethods: "'GET,OPTIONS'"
-              AllowHeaders: "'Content-Type'"

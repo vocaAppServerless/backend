@@ -3,10 +3,14 @@ const {
   SecretsManagerClient,
   GetSecretValueCommand,
 } = require("@aws-sdk/client-secrets-manager");
+const axios = require("axios");
+const jwt_decode = require("jwt-decode");
 require("dotenv").config();
 
 const awsDevSecretName = process.env.AWS_DEV_SECRET_NAME;
 const awsDevSecretRegion = process.env.AWS_DEV_SECRET_REGION;
+
+// secret funcs
 
 const getSecrets = async () => {
   const env = process.env.ENV;
@@ -19,22 +23,31 @@ const getSecrets = async () => {
   const clientSecret = process.env.OAUTH_CLIENT_SECRET;
   const redirectUri = process.env.OAUTH_REDIRECT_URI;
 
+  const validateRequiredEnvs = (vars) => {
+    const missingVars = vars.filter((varName) => !process.env[varName]);
+    if (missingVars.length > 0) {
+      throw new Error(
+        `Missing required environment variables: ${missingVars.join(", ")}`
+      );
+    }
+  };
+
   if (env === "dev" || env === "dev_sam") {
+    validateRequiredEnvs([
+      "MONGODB_USER",
+      "MONGODB_PASSWORD",
+      "MONGODB_HOST",
+      "MONGODB_PORT",
+      "MONGODB_DB",
+      "OAUTH_CLIENT_ID",
+      "OAUTH_CLIENT_SECRET",
+      "OAUTH_REDIRECT_URI",
+    ]);
     let dbUri;
 
     if (env === "dev_sam") {
       dbUri = `mongodb://${user}:${password}@host.docker.internal:${port}/${dbName}`;
-    } else if (
-      env === "dev" &&
-      user &&
-      password &&
-      host &&
-      port &&
-      dbName &&
-      clientId &&
-      clientSecret &&
-      redirectUri
-    ) {
+    } else if (env === "dev") {
       dbUri = `mongodb://${user}:${password}@${host}:${port}/${dbName}`;
     } else {
       throw new Error(
@@ -110,6 +123,8 @@ const checkCachedSecrets = async (cachedSecrets) => {
   }
 };
 
+// db funcs
+
 const getDb = async (cachedDb, cachedSecrets) => {
   try {
     if (cachedDb && cachedSecrets) {
@@ -136,4 +151,131 @@ const getDb = async (cachedDb, cachedSecrets) => {
   }
 };
 
-module.exports = { getSecrets, checkCachedSecrets, getDb };
+// auth funcs
+
+const auth = {
+  getGoogleTokensByOauthCode: async (
+    oauthCode,
+    clientId,
+    clientSecret,
+    redirectUri,
+    codeVerifier
+  ) => {
+    const tokenUrl = "https://oauth2.googleapis.com/token";
+
+    const payload = {
+      code: oauthCode,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code",
+      code_verifier: codeVerifier,
+    };
+
+    try {
+      const response = await axios.post(
+        tokenUrl,
+        new URLSearchParams(payload).toString(),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+
+      return {
+        message: "Successfully fetched tokens from getGoogleTokensByOauthCode",
+        tokens: response.data,
+      };
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch token from getGoogleTokensByOauthCode: ${error.message}`
+      );
+    }
+  },
+
+  getGoogleUserInfoByAccessToken: async (accessToken) => {
+    const userInfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
+
+    try {
+      const response = await axios.get(userInfoUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      return {
+        message: "there is userInfo from getGoogleUserInfoByAccessToken",
+        userInfo: response.data,
+      };
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch user info from getGoogleUserInfoByAccessToken: ${error.message}`
+      );
+    }
+  },
+  getSignData: async function (
+    oauthCode,
+    clientId,
+    clientSecret,
+    redirectUri,
+    codeVerifier
+  ) {
+    try {
+      const tokens = (
+        await this.getGoogleTokensByOauthCode(
+          oauthCode,
+          clientId,
+          clientSecret,
+          redirectUri,
+          codeVerifier
+        )
+      ).tokens;
+
+      const decodedIdToken = jwt_decode(tokens.id_token);
+
+      const userInfo = {
+        email: decodedIdToken.email,
+        name: decodedIdToken.name,
+        picture: decodedIdToken.picture,
+      };
+
+      return {
+        message: "here are tokens and user Info from getSignData",
+        userInfo,
+        tokens: {
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+        },
+      };
+    } catch (error) {
+      throw new Error(`Error in getSignData: ${error.message}`);
+    }
+  },
+};
+
+// api resources
+
+const apiResource = {
+  headers: {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "OPTIONS, GET",
+    "Access-Control-Allow-Headers": "Content-Type",
+  },
+
+  respond: (statusCode, body) => {
+    return {
+      statusCode,
+      body: JSON.stringify(body),
+      headers: apiResource.headers,
+    };
+  },
+};
+
+module.exports = {
+  getSecrets,
+  checkCachedSecrets,
+  getDb,
+  auth,
+  apiResource,
+};

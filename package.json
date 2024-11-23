@@ -22,6 +22,6 @@
     ]
   },
   "dependencies": {
-    "@nurdworker/rbm-helper": "^1.0.0"
+    "@nurdworker/rbm-helper": "^1.0.1"
   }
 }
