@@ -19,7 +19,6 @@ const {
 let cachedSecrets = {};
 let cachedDb = null;
 
-console.log()
 
 // Handle existing user flow: check if user is banned or not, and respond accordingly
 const handleExistingUser = async (existingUser, userInfo, tokens) => {
@@ -73,9 +72,10 @@ const handleNewUser = async (userInfo, tokens) => {
 
 // Retrieve client ID and redirect URI
 const getClientIdAndRedirectUri = async () => {
+
   try {
     cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
-    const { clientId, redirectUri } = cachedSecrets.oauthSecret;
+    const { clientId, redirectUri } = cachedSecrets.oauthSecrets;
     if (clientId && redirectUri) {
       const authResponse = "success to get client id and redirect uri";
       return respond(200, { authResponse, clientId, redirectUri });
@@ -90,10 +90,6 @@ const getClientIdAndRedirectUri = async () => {
 // Sign-up or Sign-in flow based on the existing user data
 const signUpOrSignIn = async (event) => {
   try {
-    // Check db, secret casing
-    cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
-    cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
-
     // Arrange necessary data
     const oauthCode = event.headers?.oauthCode;
     const codeVerifier = event.headers?.codeVerifier;
@@ -147,16 +143,16 @@ const signUpOrSignIn = async (event) => {
     }
   } catch (error) {
     console.error("Error on sign up/sign in:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Failed on sign" }),
-      headers,
-    };
+    return respond(500, {
+      message: "Failed on sign",
+    });
   }
 };
 
 // Main handler function to process requests based on query params
 exports.handler = async (event) => {
+  cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
+  cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
   const requestType = event.queryStringParameters?.request;
   switch (requestType) {
     case "getClientIdAndRedirectUri":

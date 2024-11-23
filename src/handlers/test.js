@@ -22,7 +22,6 @@ const {
 
 // cached data
 
-console.log(getSecrets())
 
 let cachedSecrets = {};
 let cachedDb = null;

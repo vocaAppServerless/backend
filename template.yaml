@@ -40,6 +40,7 @@ Resources:
     Properties:
       Handler: src/handlers/getUser.handler
       Runtime: nodejs20.x
+      Timeout: 10 # 타임아웃 시간을 10초로 설정
       Events:
         UserGet:
           Type: Api
