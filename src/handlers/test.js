@@ -84,6 +84,7 @@ const validateRequestType = (requestType) => {
 
 exports.handler = async (event) => {
   const requestType = event.queryStringParameters?.request;
+  console.log(event.headers);
   if (!validateRequestType(requestType)) {
     return respond(400, { message: "Invalid request" });
   }
