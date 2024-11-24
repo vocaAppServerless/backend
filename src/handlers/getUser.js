@@ -93,6 +93,7 @@ const signUpOrSignIn = async (event) => {
     const codeVerifier = event.headers?.Codeverifier;
     const { clientId, clientSecret, redirectUri } = cachedSecrets.oauthSecrets;
 
+    console.log(event.headers);
     console.log(oauthCode);
     console.log(codeVerifier);
 
