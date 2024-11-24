@@ -153,6 +153,39 @@ const getDb = async (cachedDb, cachedSecrets) => {
 
 // auth funcs
 
+const createAuthResult = (authResponse, userInfo, code) => {
+  return {
+    authResponse,
+    userInfo, // 사용자 정보를 추가
+    code,
+  };
+};
+
+// 토큰 검증 함수 (공통으로 처리)
+const verifyToken = async (token, tokenType) => {
+  try {
+    const url =
+      tokenType === "refresh"
+        ? "https://oauth2.googleapis.com/tokeninfo"
+        : `https://oauth2.googleapis.com/tokeninfo?access_token=${token}`;
+
+    const headers =
+      tokenType === "refresh"
+        ? { Authorization: `Bearer ${token}` }
+        : undefined;
+
+    const response =
+      tokenType === "refresh"
+        ? await axios.post(url, null, { headers })
+        : await axios.get(url);
+
+    return response;
+  } catch (error) {
+    console.error(`Error verifying ${tokenType} token:`, error);
+    throw error;
+  }
+};
+
 const auth = {
   getGoogleTokensByOauthCode: async (
     oauthCode,
@@ -260,6 +293,74 @@ const auth = {
       };
     } catch (error) {
       throw new Error(`Error in getSignData: ${error.message}`);
+    }
+  },
+  getOauthMiddleWareResult: async (event) => {
+    let refresh_token;
+    let access_token;
+
+    if (process.env.ENV == "dev_sam") {
+      refresh_token = event.headers?.["Refresh-Token"];
+      access_token = event.headers?.["Access-Token"];
+    } else {
+      refresh_token = event.headers?.refresh_token;
+      access_token = event.headers?.access_token;
+    }
+
+    access_token = access_token?.replace(/^Bearer\s+/i, "");
+
+    if (refresh_token) {
+      // Refresh-Token이 있을 경우
+      try {
+        const refreshTokenResponse = await verifyToken(
+          refresh_token,
+          "refresh"
+        );
+
+        if (refreshTokenResponse.status === 200) {
+          const { access_token } =
+            refreshTokenResponse.data.authResponse.tokens;
+
+          // 새로 발급된 토큰을 사용해 사용자 정보 가져오기
+          const userInfo = await auth.getGoogleUserInfoByAccessToken(
+            access_token
+          );
+
+          return createAuthResult(
+            "here is new tokens",
+            userInfo.userInfo, // 사용자 정보 포함
+            201
+          ); // 201: 새 토큰 발급 성공
+        } else {
+          return createAuthResult("expired all", null, 419); // 419: 만료된 토큰, userInfo는 null
+        }
+      } catch (error) {
+        return createAuthResult("failed on refresh token", null, 401); // 401: 인증 실패, userInfo는 null
+      }
+    } else if (access_token) {
+      // Access-Token이 있을 경우
+      try {
+        const accessTokenResponse = await verifyToken(access_token, "access");
+
+        if (accessTokenResponse.status === 200) {
+          // 유효한 액세스 토큰을 사용해 사용자 정보 가져오기
+          const userInfo = await auth.getGoogleUserInfoByAccessToken(
+            access_token
+          );
+
+          return createAuthResult(
+            "success authorization",
+            userInfo.userInfo, // 사용자 정보 포함
+            200
+          ); // 200: 인증 성공
+        } else {
+          return createAuthResult("expired access token", null, 419); // 419: 만료된 액세스 토큰, userInfo는 null
+        }
+      } catch (error) {
+        return createAuthResult("failed on access token", null, 401); // 401: 인증 실패, userInfo는 null
+      }
+    } else {
+      return createAuthResult("failed empty", null, 401); // 401: 인증 정보 없음, userInfo는 null
     }
   },
 };

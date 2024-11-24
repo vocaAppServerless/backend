@@ -38,7 +38,7 @@ Resources:
       Timeout: 10 # 타임아웃 시간을 10초로 설정
       Events:
         TestEvent:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /test
             Method: get

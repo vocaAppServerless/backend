@@ -91,7 +91,7 @@ const signUpOrSignIn = async (event) => {
     // Arrange necessary data
     let oauthCode;
     let codeVerifier;
-    if (process.env.ENV == "dev") {
+    if (process.env.ENV == "dev_sam") {
       oauthCode = event.headers?.Oauthcode;
       codeVerifier = event.headers?.Codeverifier;
     } else {
@@ -100,6 +100,9 @@ const signUpOrSignIn = async (event) => {
     }
     const { clientId, clientSecret, redirectUri } = cachedSecrets.oauthSecrets;
     //check header values
+
+    console.log(event.headers);
+    console.log({ clientId, clientSecret, redirectUri });
 
     //check necessary data
     if (
