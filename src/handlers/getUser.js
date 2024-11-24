@@ -19,7 +19,6 @@ const {
 let cachedSecrets = {};
 let cachedDb = null;
 
-
 // Handle existing user flow: check if user is banned or not, and respond accordingly
 const handleExistingUser = async (existingUser, userInfo, tokens) => {
   const user_id = existingUser._id;
@@ -72,7 +71,6 @@ const handleNewUser = async (userInfo, tokens) => {
 
 // Retrieve client ID and redirect URI
 const getClientIdAndRedirectUri = async () => {
-
   try {
     cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
     const { clientId, redirectUri } = cachedSecrets.oauthSecrets;
@@ -91,9 +89,9 @@ const getClientIdAndRedirectUri = async () => {
 const signUpOrSignIn = async (event) => {
   try {
     // Arrange necessary data
-    const oauthCode = event.headers?.oauthCode;
-    const codeVerifier = event.headers?.codeVerifier;
-    const { clientId, clientSecret, redirectUri } = cachedSecrets.oauthSecret;
+    const oauthCode = event.headers?.Oauthcode;
+    const codeVerifier = event.headers?.Codeverifier;
+    const { clientId, clientSecret, redirectUri } = cachedSecrets.oauthSecrets;
 
     //check necessary data
     if (
@@ -119,6 +117,7 @@ const signUpOrSignIn = async (event) => {
 
         //find User data from database
         const { userInfo, tokens } = signData;
+
         const userCollection = cachedDb.collection("users");
         const existingUser = await userCollection.findOne({
           email: userInfo.email,
@@ -151,15 +150,18 @@ const signUpOrSignIn = async (event) => {
 
 // Main handler function to process requests based on query params
 exports.handler = async (event) => {
+  const requestType = event.queryStringParameters?.request;
+  // 캐시된 비밀 값과 DB를 가져오는 작업
   cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
   cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
-  const requestType = event.queryStringParameters?.request;
+
   switch (requestType) {
     case "getClientIdAndRedirectUri":
       return getClientIdAndRedirectUri();
     case "sign":
       return signUpOrSignIn(event);
     default:
+      console.log("Invalid request type:", requestType);
       return respond(400, { message: "Invalid request from user get lambda" });
   }
 };

@@ -18,6 +18,17 @@ Globals:
         OAUTH_CLIENT_ID: !Ref OAUTH_CLIENT_ID
         OAUTH_CLIENT_SECRET: !Ref OAUTH_CLIENT_SECRET
         OAUTH_REDIRECT_URI: !Ref OAUTH_REDIRECT_URI
+
+  HttpApi:
+    CorsConfiguration:
+      AllowHeaders:
+        - "*"
+      AllowMethods:
+        - GET
+        - POST
+      AllowOrigins:
+        - "*"
+
 Resources:
   TestFunction:
     Type: AWS::Serverless::Function
@@ -43,14 +54,14 @@ Resources:
       Timeout: 10 # 타임아웃 시간을 10초로 설정
       Events:
         UserGet:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /user
             Method: get
             Cors:
               AllowOrigins: "'*'"
               AllowMethods: "'GET,OPTIONS'"
-              AllowHeaders: "'Content-Type'"
+              AllowHeaders: "'*'"
 
   # ListsGet:
   #   Type: AWS::Serverless::Function

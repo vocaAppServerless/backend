@@ -1,5 +1,9 @@
 {
   "queryStringParameters": {
-    "request": "connectDb"
+    "request": "sign"
+  },
+  "headers": {
+    "oauthCode": "4/0AeanS0b8YSulj1iDBzGT-s8pn-bZJPBl4F81J96anjQqGbcG-VvZT01opYIfFumOpmCDtg",
+    "codeVerifier": "k89v4pmubn"
   }
 }

@@ -183,13 +183,23 @@ const auth = {
         }
       );
 
+      if (!response.data.refresh_token) {
+        console.warn(
+          "No refresh_token received. Ensure your OAuth URL includes 'access_type=offline' and 'prompt=consent'."
+        );
+      }
+
       return {
         message: "Successfully fetched tokens from getGoogleTokensByOauthCode",
         tokens: response.data,
       };
     } catch (error) {
+      console.log("Error Response:", error.response?.data);
+
       throw new Error(
-        `Failed to fetch token from getGoogleTokensByOauthCode: ${error.message}`
+        `Failed to fetch token from getGoogleTokensByOauthCode: ${
+          error.response?.data.error_description || error.message
+        }`
       );
     }
   },
@@ -223,7 +233,7 @@ const auth = {
   ) {
     try {
       const tokens = (
-        await this.getGoogleTokensByOauthCode(
+        await auth.getGoogleTokensByOauthCode(
           oauthCode,
           clientId,
           clientSecret,
@@ -259,8 +269,8 @@ const auth = {
 const apiResource = {
   headers: {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "OPTIONS, GET",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "OPTIONS, GET, POST",
+    "Access-Control-Allow-Headers": "*",
   },
 
   respond: (statusCode, body) => {
