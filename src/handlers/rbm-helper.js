@@ -303,8 +303,8 @@ const auth = {
       refresh_token = event.headers?.["Refresh-Token"];
       access_token = event.headers?.["Access-Token"];
     } else {
-      refresh_token = event.headers?.refresh_token;
-      access_token = event.headers?.access_token;
+      refresh_token = event.headers?.["refresh-token"];
+      access_token = event.headers?.["access-token"];
     }
 
     access_token = access_token?.replace(/^Bearer\s+/i, "");
