@@ -89,13 +89,17 @@ const getClientIdAndRedirectUri = async () => {
 const signUpOrSignIn = async (event) => {
   try {
     // Arrange necessary data
-    const oauthCode = event.headers?.Oauthcode;
-    const codeVerifier = event.headers?.Codeverifier;
+    let oauthCode;
+    let codeVerifier;
+    if (process.env.ENV == "dev") {
+      oauthCode = event.headers?.Oauthcode;
+      codeVerifier = event.headers?.Codeverifier;
+    } else {
+      oauthCode = event.headers?.oauthcode;
+      codeVerifier = event.headers?.codeverifier;
+    }
     const { clientId, clientSecret, redirectUri } = cachedSecrets.oauthSecrets;
     //check header values
-    console.log(event.headers);
-    console.log(oauthCode);
-    console.log(codeVerifier);
 
     //check necessary data
     if (
