@@ -299,6 +299,7 @@ const auth = {
     let refresh_token;
     let access_token;
 
+    //check env
     if (process.env.ENV == "dev_sam") {
       refresh_token = event.headers?.["Refresh-Token"];
       access_token = event.headers?.["Access-Token"];
@@ -306,12 +307,13 @@ const auth = {
       refresh_token = event.headers?.["refresh-token"];
       access_token = event.headers?.["access-token"];
     }
-
+    //contract access token string
     access_token = access_token?.replace(/^Bearer\s+/i, "");
 
     if (refresh_token) {
-      // Refresh-Token이 있을 경우
+      // refresh token case
       try {
+        //verify refresh token
         const refreshTokenResponse = await verifyToken(
           refresh_token,
           "refresh"
@@ -321,26 +323,32 @@ const auth = {
           const { access_token } =
             refreshTokenResponse.data.authResponse.tokens;
 
-          // 새로 발급된 토큰을 사용해 사용자 정보 가져오기
           const userInfo = await auth.getGoogleUserInfoByAccessToken(
             access_token
           );
 
-          return createAuthResult(
-            "here is new tokens",
-            userInfo.userInfo, // 사용자 정보 포함
-            201
-          ); // 201: 새 토큰 발급 성공
-        } else {
-          return createAuthResult("expired all", null, 419); // 419: 만료된 토큰, userInfo는 null
+          return createAuthResult("here is new tokens", userInfo.userInfo, 201);
         }
       } catch (error) {
-        return createAuthResult("failed on refresh token", null, 401); // 401: 인증 실패, userInfo는 null
+        if (error.response?.data?.error_description === "Token has expired") {
+          return createAuthResult("expired refresh token", null, 419);
+        } else if (
+          error.response?.data?.error_description === "Invalid Value"
+        ) {
+          return createAuthResult("invalid refresh token", null, 401);
+        } else {
+          console.error(
+            "Unhandled error during refresh token verification:",
+            error
+          );
+          return createAuthResult("unknown error", null, 500);
+        }
       }
     } else if (access_token) {
       // Access-Token이 있을 경우
       try {
         const accessTokenResponse = await verifyToken(access_token, "access");
+        //여기서 refresh token에러남 failed on access token
 
         if (accessTokenResponse.status === 200) {
           // 유효한 액세스 토큰을 사용해 사용자 정보 가져오기
@@ -353,11 +361,18 @@ const auth = {
             userInfo.userInfo, // 사용자 정보 포함
             200
           ); // 200: 인증 성공
-        } else {
-          return createAuthResult("expired access token", null, 419); // 419: 만료된 액세스 토큰, userInfo는 null
         }
       } catch (error) {
-        return createAuthResult("failed on access token", null, 401); // 401: 인증 실패, userInfo는 null
+        if (error.response?.data?.error_description === "Token has expired") {
+          return createAuthResult("expired access token", null, 419); // 만료된 토큰
+        } else if (
+          error.response?.data?.error_description === "Invalid Value"
+        ) {
+          return createAuthResult("invalid access token", null, 401); // 위조된 토큰
+        } else {
+          console.error("Unhandled error during token verification:", error);
+          return createAuthResult("unknown error", null, 500); // 예상치 못한 에러
+        }
       }
     } else {
       return createAuthResult("failed empty", null, 401); // 401: 인증 정보 없음, userInfo는 null

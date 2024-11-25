@@ -101,9 +101,6 @@ const signUpOrSignIn = async (event) => {
     const { clientId, clientSecret, redirectUri } = cachedSecrets.oauthSecrets;
     //check header values
 
-    console.log(event.headers);
-    console.log({ clientId, clientSecret, redirectUri });
-
     //check necessary data
     if (
       !oauthCode ||

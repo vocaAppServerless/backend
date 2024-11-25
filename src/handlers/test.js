@@ -61,8 +61,6 @@ const handleConnectDb = async () => {
 const handleTestAuthFlow = async (event, authResult) => {
   try {
     cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
-    console.log("여기야 여기~");
-    console.log(authResult.userInfo);
     return respond(authResult.code, {
       authResponse: authResult.authResponse,
       testdata: "testdata",
@@ -84,7 +82,6 @@ const validateRequestType = (requestType) => {
 
 exports.handler = async (event) => {
   const requestType = event.queryStringParameters?.request;
-  console.log(event.headers);
   if (!validateRequestType(requestType)) {
     return respond(400, { message: "Invalid request" });
   }
