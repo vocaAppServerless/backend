@@ -363,12 +363,14 @@ const auth = {
           ); // 200: 인증 성공
         }
       } catch (error) {
+        console.log(error);
         if (error.response?.data?.error_description === "Token has expired") {
           return createAuthResult("expired access token", null, 419); // 만료된 토큰
         } else if (
           error.response?.data?.error_description === "Invalid Value"
         ) {
-          return createAuthResult("invalid access token", null, 401); // 위조된 토큰
+          //요 부분으로 디버깅
+          return createAuthResult(error, null, 401); // 위조된 토큰
         } else {
           console.error("Unhandled error during token verification:", error);
           return createAuthResult("unknown error", null, 500); // 예상치 못한 에러

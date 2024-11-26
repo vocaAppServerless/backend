@@ -99,6 +99,7 @@ exports.handler = async (event) => {
   if (requestType == "testAuthFlow") {
     authResult = await getOauthMiddleWareResult(event);
     if (authResult.code == 419 || authResult.code == 401) {
+      console.log(authResult)
       return respond(authResult.code, {
         authResponse: authResult.authResponse,
       });
