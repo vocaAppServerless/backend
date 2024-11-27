@@ -43,9 +43,6 @@ const handleExistingUser = async (existingUser, userInfo, tokens) => {
         cachedDb
       );
 
-      console.log("여기서 리프레시 저장");
-      console.log(tokens.refresh_token);
-
       await saveRefreshTokenLog(
         userInfo.email,
         tokens.refresh_token,
@@ -79,38 +76,54 @@ const handleExistingUser = async (existingUser, userInfo, tokens) => {
 
 // Handle new user flow: create a new user and respond with success
 const handleNewUser = async (userInfo, tokens) => {
-  const userCollection = cachedDb.collection("users");
-  const newUser = {
-    email: userInfo.email,
-    name: userInfo.name,
-    picture: userInfo.picture,
-    creation_date: new Date(),
-    is_banned: false,
-  };
+  try {
+    const userCollection = cachedDb.collection("users");
+    const newUser = {
+      email: userInfo.email,
+      name: userInfo.name,
+      picture: userInfo.picture,
+      creation_date: new Date(),
+      is_banned: false,
+    };
 
-  const user_id = (await userCollection.insertOne(newUser)).insertedId;
+    // 새로운 유저 삽입
+    const user_id = (await userCollection.insertOne(newUser)).insertedId;
 
-  await saveAccessTokenLog(
-    userInfo.email,
-    tokens.access_token,
-    tokens.expires_in,
-    "signUp",
-    cachedDb
-  );
-  await saveRefreshTokenLog(
-    userInfo.email,
-    tokens.refresh_token,
-    "signUp",
-    cachedDb
-  );
-  return respond(200, {
-    authResponse: "signUp success",
-    userInfo: { email: userInfo.email, picture: userInfo.picture, user_id },
-    tokens: {
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
-    },
-  });
+    // Access token 로그 저장
+    await saveAccessTokenLog(
+      userInfo.email,
+      tokens.access_token,
+      tokens.expires_in,
+      "signUp",
+      cachedDb
+    );
+
+    // Refresh token 로그 저장
+    await saveRefreshTokenLog(
+      userInfo.email,
+      tokens.refresh_token,
+      "signUp",
+      cachedDb
+    );
+
+    // 성공 응답
+    return respond(200, {
+      authResponse: "signUp success!",
+      userInfo: { email: userInfo.email, picture: userInfo.picture, user_id },
+      tokens: {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+      },
+    });
+  } catch (error) {
+    console.error("Error in handleNewUser:", error);
+
+    // 에러 응답 반환
+    return respond(500, {
+      authResponse: "error",
+      message: "An unexpected error occurred during user sign-up.",
+    });
+  }
 };
 
 // Retrieve client ID and redirect URI

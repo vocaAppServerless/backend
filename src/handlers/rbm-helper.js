@@ -493,7 +493,6 @@ const auth = {
           ); // 200: 인증 성공
         }
       } catch (error) {
-        console.log(error);
         if (error.response?.status === 400) {
           // 여기서 토큰 만료 혹은 위조 조건문 나눔
           if (
