@@ -41,6 +41,8 @@ const handleExistingUser = async (existingUser, userInfo, tokens) => {
       "signIn",
       cachedDb
     );
+    console.log("여기서 리프레시 저장");
+    console.log(tokens.refresh_token);
     saveRefreshTokenLog(
       userInfo.email,
       tokens.refresh_token,
