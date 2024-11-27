@@ -23,43 +23,56 @@ let cachedDb = null;
 
 // Handle existing user flow: check if user is banned or not, and respond accordingly
 const handleExistingUser = async (existingUser, userInfo, tokens) => {
-  const user_id = existingUser._id;
-  const is_banned = existingUser.is_banned;
+  try {
+    const user_id = existingUser._id;
+    const is_banned = existingUser.is_banned;
 
-  if (is_banned) {
-    // User is banned, respond with "get out!"
-    return respond(200, {
-      authResponse: "get out!",
-      userInfo: { email: userInfo.email },
-    });
-  } else {
-    // User is not banned, respond with "signIn success!"
-    saveAccessTokenLog(
-      userInfo.email,
-      tokens.access_token,
-      tokens.expires_in,
-      "signIn",
-      cachedDb
-    );
-    console.log("여기서 리프레시 저장");
-    console.log(tokens.refresh_token);
-    saveRefreshTokenLog(
-      userInfo.email,
-      tokens.refresh_token,
-      "signIn",
-      cachedDb
-    );
-    return respond(200, {
-      authResponse: "signIn success!",
-      userInfo: {
-        email: userInfo.email,
-        picture: userInfo.picture,
-        user_id,
-      },
-      tokens: {
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-      },
+    if (is_banned) {
+      // User is banned, respond with "get out!"
+      return respond(200, {
+        authResponse: "get out!",
+        userInfo: { email: userInfo.email },
+      });
+    } else {
+      // User is not banned, respond with "signIn success!"
+      await saveAccessTokenLog(
+        userInfo.email,
+        tokens.access_token,
+        tokens.expires_in,
+        "signIn",
+        cachedDb
+      );
+
+      console.log("여기서 리프레시 저장");
+      console.log(tokens.refresh_token);
+
+      await saveRefreshTokenLog(
+        userInfo.email,
+        tokens.refresh_token,
+        "signIn",
+        cachedDb
+      );
+
+      return respond(200, {
+        authResponse: "signIn success!",
+        userInfo: {
+          email: userInfo.email,
+          picture: userInfo.picture,
+          user_id,
+        },
+        tokens: {
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Error in handleExistingUser:", error);
+
+    // Return a generic error response
+    return respond(500, {
+      authResponse: "error",
+      message: "An unexpected error occurred while handling the user.",
     });
   }
 };
