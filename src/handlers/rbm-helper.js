@@ -263,7 +263,7 @@ const tokenLogFuncs = {
 
       if (!matchingDocument) {
         throw new Error(
-          `The ${type} token is not in database on doesTokenLogExist ${email}, ${refresh_token}, ${tokenValue}`
+          `The ${type} token is not in database on doesTokenLogExist`
         );
       }
 

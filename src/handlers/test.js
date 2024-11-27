@@ -68,11 +68,11 @@ exports.handler = async (event) => {
   const email = decodeURIComponent(event.queryStringParameters?.email);
   console.log(email);
   console.log("여기야1");
-  console.log(event.headers);
+  console.log(event.headers?.["refresh-token"]);
+  console.log(event.headers?.["access-token"]);
   console.log("여기야2");
 
   cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
-  console.log(cachedSecrets);
   cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
 
   // // 미들웨어에서 요청 처리
