@@ -197,7 +197,7 @@ exports.handler = async (event) => {
     case "sign":
       return signUpOrSignIn(event);
     default:
-      console.log("Invalid request type:", requestType);
+      console.log("Invalid request type on user get lambda:", requestType);
       return respond(400, { message: "Invalid request from user get lambda" });
   }
 };

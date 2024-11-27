@@ -1,76 +1,86 @@
+// import necessary functions
 const {
   checkCachedSecrets,
   getDb,
-  auth: {
-    getGoogleTokensByOauthCode,
-    getGoogleUserInfoByAccessToken,
-    getSignData,
-  },
+  auth: { getOauthMiddleWareResult },
   apiResource: { respond },
 } = require("@nurdworker/rbm-helper");
 // const {
 //   checkCachedSecrets,
 //   getDb,
-//   auth: {
-//     getGoogleTokensByOauthCode,
-//     getGoogleUserInfoByAccessToken,
-//     getSignData,
-//   },
+//   auth: { getOauthMiddleWareResult },
 //   apiResource: { respond },
 // } = require("./rbm-helper");
 
+// declare cached data
 let cachedSecrets = {};
 let cachedDb = null;
 
-const handleRequest1 = async (event) => {
+// handlers
+
+const getLists = async (event, authResult, email) => {
   try {
-    cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
-    cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
+    // Fetch user ID based on email from cachedDb
+    const user = await cachedDb.collection("users").findOne({ email });
+    if (!user) {
+      return respond(500, { message: "User not found" });
+    }
+    const userId = user._id;
 
-    const queryParams = event.queryStringParameters || {};
-    const requestBody = event.body ? JSON.parse(event.body) : {};
+    // Fetch lists for the user, sorted by most recent addition (assuming a `createdAt` field)
+    const listsArr = await cachedDb
+      .collection("lists")
+      .find({ userId }) // Filter by userId
+      .sort({ createdAt: -1 }) // Sort by createdAt in descending order
+      .project({ _id: 1, name: 1, otherFields: 1 }) // Include _id and specific fields
+      .toArray();
 
-    const authResponse = `success on request1`;
-
-    return respond(200, { authResponse });
+    // Respond with the lists
+    return respond(authResult.code, {
+      authResponse: authResult.authResponse,
+      answer: {
+        message: "success get lists",
+        lists: listsArr,
+      },
+    });
   } catch (error) {
-    console.error("Error on request1:", error);
+    // Error handler
+    console.error("Error on getLists:", error);
     return respond(500, {
-      message: "Failed on request1",
+      message: error.message || "Failed on getLists",
     });
   }
 };
 
-// 요청 핸들러: Request 2
-const handleRequest2 = async (event) => {
-  try {
-    cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
-    cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
-    // 헤더나 파라미터 활용 예시
-    const customHeader = event.headers?.["x-custom-header"] || "No Header";
-    const queryParams = event.queryStringParameters || {};
-    const authResponse = `success on request2`;
-
-    return respond(200, {
-      authResponse,
-      message: "Request 2 successfully handled",
-    });
-  } catch (error) {
-    console.error("Error on request2:", error);
-    return respond(500, { message: "Failed on request2" });
-  }
-};
-
-// 메인 핸들러
+// main handler
 exports.handler = async (event) => {
+  //get params request and email
   const requestType = event.queryStringParameters?.request;
+  const email = decodeURIComponent(event.queryStringParameters?.email);
 
+  // caching
+  cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
+  cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
+
+  //auth middle ware
+  const authResult = await getOauthMiddleWareResult(
+    event,
+    email,
+    cachedSecrets,
+    cachedDb
+  );
+  if (authResult.code == 419 || authResult.code == 401) {
+    return respond(authResult.code, {
+      authResponse: authResult.authResponse,
+    });
+  }
+
+  // response by request
   switch (requestType) {
-    case "request1":
-      return handleRequest1(event);
-    case "request2":
-      return handleRequest2(event);
+    case "getLists":
+      return getLists(event, authResult, email);
     default:
-      return respond(400, { message: "Invalid request from lambdaFunc" });
+      console.log("Invalid request type on lists get lambda:", requestType);
+      return respond(400, { message: "Invalid request from lists get lambda" });
   }
 };

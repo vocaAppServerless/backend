@@ -60,7 +60,6 @@ const handleConnectDb = async () => {
 
 const handleTestAuthFlow = async (event, authResult) => {
   try {
-    cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
     return respond(authResult.code, {
       authResponse: authResult.authResponse,
       testdata: "testdata",
@@ -111,5 +110,8 @@ exports.handler = async (event) => {
       return handleConnectDb();
     case "testAuthFlow":
       return handleTestAuthFlow(event, authResult);
+    default:
+      console.log("Invalid request type on test lambda:", requestType);
+      return respond(400, { message: "Invalid request from test lambda" });
   }
 };
