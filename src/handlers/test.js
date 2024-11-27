@@ -70,21 +70,12 @@ const handleTestAuthFlow = async (event, authResult) => {
   }
 };
 
-const validateRequestType = (requestType) => {
-  const validRequestTypes = [
-    "connectLambda",
-    "readServerEnv",
-    "connectDb",
-    "testAuthFlow",
-  ];
-  return validRequestTypes.includes(requestType);
-};
-
 exports.handler = async (event) => {
   const requestType = event.queryStringParameters?.request;
-  if (!validateRequestType(requestType)) {
-    return respond(400, { message: "Invalid request" });
-  }
+  const email = decodeURIComponent(event.queryStringParameters?.email);
+  console.log(email);
+  cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
+  cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
 
   // // 미들웨어에서 요청 처리
   // const authResult = await getOauthMiddleWareResult(event);
@@ -97,9 +88,14 @@ exports.handler = async (event) => {
 
   //test존 미들웨어 조건문
   if (requestType == "testAuthFlow") {
-    authResult = await getOauthMiddleWareResult(event);
+    authResult = await getOauthMiddleWareResult(
+      event,
+      email,
+      cachedSecrets,
+      cachedDb
+    );
     if (authResult.code == 419 || authResult.code == 401) {
-      console.log(authResult)
+      console.log(authResult);
       return respond(authResult.code, {
         authResponse: authResult.authResponse,
       });

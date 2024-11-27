@@ -1,6 +1,7 @@
 const {
   checkCachedSecrets,
   getDb,
+  tokenLogFuncs: { saveAccessTokenLog, saveRefreshTokenLog },
   auth: { getSignData },
   apiResource: { respond },
 } = require("@nurdworker/rbm-helper");
@@ -8,6 +9,7 @@ const {
 // const {
 //   checkCachedSecrets,
 //   getDb,
+//   tokenLogFuncs: { saveAccessTokenLog, saveRefreshTokenLog },
 //   auth: {
 //     getGoogleTokensByOauthCode,
 //     getGoogleUserInfoByAccessToken,
@@ -32,6 +34,19 @@ const handleExistingUser = async (existingUser, userInfo, tokens) => {
     });
   } else {
     // User is not banned, respond with "signIn success!"
+    saveAccessTokenLog(
+      userInfo.email,
+      tokens.access_token,
+      tokens.expires_in,
+      "signIn",
+      cachedDb
+    );
+    saveRefreshTokenLog(
+      userInfo.email,
+      tokens.refresh_token,
+      "signIn",
+      cachedDb
+    );
     return respond(200, {
       authResponse: "signIn success!",
       userInfo: {
@@ -59,6 +74,20 @@ const handleNewUser = async (userInfo, tokens) => {
   };
 
   const user_id = (await userCollection.insertOne(newUser)).insertedId;
+
+  await saveAccessTokenLog(
+    userInfo.email,
+    tokens.access_token,
+    tokens.expires_in,
+    "signUp",
+    cachedDb
+  );
+  await saveRefreshTokenLog(
+    userInfo.email,
+    tokens.refresh_token,
+    "signUp",
+    cachedDb
+  );
   return respond(200, {
     authResponse: "signUp success",
     userInfo: { email: userInfo.email, picture: userInfo.picture, user_id },
@@ -72,7 +101,6 @@ const handleNewUser = async (userInfo, tokens) => {
 // Retrieve client ID and redirect URI
 const getClientIdAndRedirectUri = async () => {
   try {
-    cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
     const { clientId, redirectUri } = cachedSecrets.oauthSecrets;
     if (clientId && redirectUri) {
       const authResponse = "success to get client id and redirect uri";

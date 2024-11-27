@@ -161,29 +161,140 @@ const createAuthResult = (authResponse, userInfo, code) => {
   };
 };
 
-// 토큰 검증 함수 (공통으로 처리)
-const verifyToken = async (token, tokenType) => {
+// 토큰 검증 함수
+const verifyAccessToken = async (accessToken) => {
   try {
-    const url =
-      tokenType === "refresh"
-        ? "https://oauth2.googleapis.com/tokeninfo"
-        : `https://oauth2.googleapis.com/tokeninfo?access_token=${token}`;
+    const url = `https://oauth2.googleapis.com/tokeninfo?access_token=${accessToken}`;
 
-    const headers =
-      tokenType === "refresh"
-        ? { Authorization: `Bearer ${token}` }
-        : undefined;
-
-    const response =
-      tokenType === "refresh"
-        ? await axios.post(url, null, { headers })
-        : await axios.get(url);
-
-    return response;
+    const response = await axios.get(url);
+    return response; // access_token 정보 반환
   } catch (error) {
-    console.error(`Error verifying ${tokenType} token:`, error);
+    console.error(`Error verifying access token:`, error.message);
     throw error;
   }
+};
+
+const calculateExpiryTime = (expiresIn) => {
+  const currentTime = Math.floor(Date.now() / 1000); // 현재 시간(초 단위)
+  const expiryTime = currentTime + expiresIn; // 만료 시간 계산
+  return expiryTime; // 유닉스 타임 형식으로 반환
+};
+
+const getNewAccessTokenByRefreshToken = async (
+  refreshToken,
+  clientId,
+  clientSecret
+) => {
+  const url = "https://oauth2.googleapis.com/token";
+
+  const params = new URLSearchParams();
+  params.append("grant_type", "refresh_token");
+  params.append("refresh_token", refreshToken);
+  params.append("client_id", clientId);
+  params.append("client_secret", clientSecret);
+
+  try {
+    const response = await axios.post(url, params);
+    return response;
+  } catch (error) {
+    if (
+      error.response &&
+      error.response.data &&
+      error.response.data.error === "invalid_grant"
+    ) {
+      console.error("Refresh token is invalid or expired");
+    } else {
+      console.error("Error refreshing access token:", error.message);
+    }
+    throw error;
+  }
+};
+
+const tokenLogFuncs = {
+  saveAccessTokenLog: async (
+    email,
+    access_token,
+    expires_in,
+    process_kind,
+    cachedDb
+  ) => {
+    const tokenLogsCollection = cachedDb.collection("token_logs");
+    const logEntry = {
+      type: "access",
+      process_kind,
+      email,
+      token_value: access_token,
+      exp: calculateExpiryTime(expires_in),
+    };
+
+    try {
+      await tokenLogsCollection.insertOne(logEntry);
+      console.log("Access token log inserted successfully");
+    } catch (error) {
+      console.error("Error inserting access token log:", error);
+      throw error;
+    }
+  },
+  saveRefreshTokenLog: async (email, refresh_token, process_kind, cachedDb) => {
+    const tokenLogsCollection = cachedDb.collection("token_logs");
+    const logEntry = {
+      type: "refresh",
+      process_kind,
+      email,
+      token_value: refresh_token,
+    };
+
+    try {
+      await tokenLogsCollection.insertOne(logEntry);
+      console.log("Refresh token log inserted successfully");
+    } catch (error) {
+      console.error("Error inserting refresh token log:", error);
+      throw error;
+    }
+  },
+  doesTokenLogExist: async (cachedDb, email, tokenValue, type) => {
+    try {
+      const tokenLogsCollection = cachedDb.collection("token_logs");
+
+      const matchingDocument = await tokenLogsCollection.findOne(
+        { email, token_value: tokenValue, type },
+        { sort: { _id: -1 } } // _id 기준 내림차순 정렬 (가장 최근에 생성된 데이터)
+      );
+
+      if (!matchingDocument) {
+        throw new Error(
+          `The ${type} token is not in database on doesTokenLogExist`
+        );
+      }
+
+      return true;
+    } catch (error) {
+      console.error(`DB error on find ${type} token:`, error);
+      throw error;
+    }
+  },
+  isTokenExpired: async (cachedDb, email, tokenValue, type, now) => {
+    try {
+      const tokenLogsCollection = cachedDb.collection("token_logs");
+
+      const matchingDocument = await tokenLogsCollection.findOne(
+        { email, token_value: tokenValue, type },
+        { sort: { _id: -1 } } // _id 기준 내림차순 정렬 (가장 최근에 생성된 데이터)
+      );
+
+      if (!matchingDocument) {
+        throw new Error(
+          `The ${type} token is not in database on isTokenExpired`
+        );
+      }
+
+      // now가 exp보다 클 경우 true, 작을 경우 false 반환
+      return now > matchingDocument.exp;
+    } catch (error) {
+      console.error(`DB error on find ${type} token:`, error);
+      throw error;
+    }
+  },
 };
 
 const auth = {
@@ -246,11 +357,9 @@ const auth = {
           Authorization: `Bearer ${accessToken}`,
         },
       });
+      const userInfo = response.data;
 
-      return {
-        message: "there is userInfo from getGoogleUserInfoByAccessToken",
-        userInfo: response.data,
-      };
+      return userInfo;
     } catch (error) {
       throw new Error(
         `Failed to fetch user info from getGoogleUserInfoByAccessToken: ${error.message}`
@@ -286,18 +395,18 @@ const auth = {
       return {
         message: "here are tokens and user Info from getSignData",
         userInfo,
-        tokens: {
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
-        },
+        tokens,
       };
     } catch (error) {
       throw new Error(`Error in getSignData: ${error.message}`);
     }
   },
-  getOauthMiddleWareResult: async (event) => {
+  getOauthMiddleWareResult: async (event, email, cachedSecrets, cachedDb) => {
     let refresh_token;
     let access_token;
+
+    const client_id = cachedSecrets.client_id;
+    const client_secret = cachedSecrets.client_secret;
 
     //check env
     if (process.env.ENV == "dev_sam") {
@@ -314,41 +423,61 @@ const auth = {
       // refresh token case
       try {
         //verify refresh token
-        const refreshTokenResponse = await verifyToken(
+        // 여기에 refresh토큰으로 토큰 존재 검사
+        await tokenLogFuncs.doesTokenLogExist(
+          cachedDb,
+          email,
           refresh_token,
           "refresh"
         );
+        // refresh 토큰으로 새로운 access token요청
+        newAccessTokenData = await getNewAccessTokenByRefreshToken(
+          refresh_token,
+          client_id,
+          client_secret
+        );
 
-        if (refreshTokenResponse.status === 200) {
-          const { access_token } =
-            refreshTokenResponse.data.authResponse.tokens;
+        if (newAccessTokenData.status === 200) {
+          //새로받은 access token의 token log저장
+          const { access_token, expires_in } = newAccessTokenData.data;
+          const process_kind = "renew";
+
+          await saveAccessTokenLog(
+            email,
+            access_token,
+            expires_in,
+            process_kind,
+            cachedDb
+          );
 
           const userInfo = await auth.getGoogleUserInfoByAccessToken(
             access_token
           );
 
-          return createAuthResult("here is new tokens", userInfo.userInfo, 201);
+          return createAuthResult(
+            { message: "here is new tokens", tokens: { access_token } },
+            userInfo,
+            201
+          );
         }
       } catch (error) {
-        if (error.response?.data?.error_description === "Token has expired") {
-          return createAuthResult("expired refresh token", null, 419);
-        } else if (
-          error.response?.data?.error_description === "Invalid Value"
-        ) {
-          return createAuthResult("invalid refresh token", null, 401);
-        } else {
-          console.error(
-            "Unhandled error during refresh token verification:",
-            error
-          );
-          return createAuthResult("unknown error", null, 500);
-        }
+        // refresh토큰과 이메일, type=refresh로 검색. 가장 최근에 있는 token_info가 인수로 받은 이메일과 refresh토큰이랑 일치하면 419, 아니면 401
+        console.error(
+          "maybe the refresh token is expired or modified :",
+          error
+        );
+        return createAuthResult(
+          error.message +
+            " / or maybe the refresh token is expired or modified",
+          null,
+          500
+        );
       }
     } else if (access_token) {
       // Access-Token이 있을 경우
       try {
-        const accessTokenResponse = await verifyToken(access_token, "access");
-        //여기서 refresh token에러남 failed on access token
+        const accessTokenResponse = await verifyAccessToken(access_token);
+        //여기서 에러던지면 바로 catch로 가니까 상관없음
 
         if (accessTokenResponse.status === 200) {
           // 유효한 액세스 토큰을 사용해 사용자 정보 가져오기
@@ -358,22 +487,30 @@ const auth = {
 
           return createAuthResult(
             "success authorization",
-            userInfo.userInfo, // 사용자 정보 포함
+            userInfo, // 사용자 정보 포함
             200
           ); // 200: 인증 성공
         }
       } catch (error) {
         console.log(error);
-        if (error.response?.data?.error_description === "Token has expired") {
-          return createAuthResult("expired access token", null, 419); // 만료된 토큰
-        } else if (
-          error.response?.data?.error_description === "Invalid Value"
-        ) {
-          //요 부분으로 디버깅
-          return createAuthResult(error, null, 401); // 위조된 토큰
+        if (error.response?.status === 400) {
+          // 여기서 토큰 만료 혹은 위조 조건문 나눔
+          if (
+            tokenLogFuncs.isTokenExpired(
+              cachedDb,
+              email,
+              access_token,
+              "access",
+              Math.floor(Date.now() / 1000)
+            )
+          ) {
+            return createAuthResult("expired access token", null, 419); // 만료된 토큰
+          } else {
+            return createAuthResult("error", null, 400); // 위조된 토큰
+          }
         } else {
           console.error("Unhandled error during token verification:", error);
-          return createAuthResult("unknown error", null, 500); // 예상치 못한 에러
+          return createAuthResult(error.message, null, 500); // 예상치 못한 에러
         }
       }
     } else {
@@ -401,9 +538,9 @@ const apiResource = {
 };
 
 module.exports = {
-  getSecrets,
   checkCachedSecrets,
   getDb,
+  tokenLogFuncs,
   auth,
   apiResource,
 };
