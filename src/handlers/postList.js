@@ -98,7 +98,7 @@ exports.handler = async (event) => {
     cachedSecrets,
     cachedDb
   );
-  if (authResult.code == 419 || authResult.code == 401) {
+  if (authResult.code == 400 || 401 || 419 || 500) {
     return respond(authResult.code, {
       authResponse: authResult.authResponse,
     });

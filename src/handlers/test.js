@@ -1,13 +1,7 @@
 const {
-  getSecrets,
   checkCachedSecrets,
   getDb,
-  auth: {
-    getGoogleTokensByOauthCode,
-    getGoogleUserInfoByAccessToken,
-    getSignData,
-    getOauthMiddleWareResult,
-  },
+  auth: { getOauthMiddleWareResult },
   apiResource: { respond },
 } = require("@nurdworker/rbm-helper");
 // const {
@@ -73,7 +67,12 @@ exports.handler = async (event) => {
   const requestType = event.queryStringParameters?.request;
   const email = decodeURIComponent(event.queryStringParameters?.email);
   console.log(email);
+  console.log("여기야1");
+  console.log(event.headers);
+  console.log("여기야2");
+
   cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
+  console.log(cachedSecrets);
   cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
 
   // // 미들웨어에서 요청 처리
@@ -93,7 +92,7 @@ exports.handler = async (event) => {
       cachedSecrets,
       cachedDb
     );
-    if (authResult.code == 419 || authResult.code == 401) {
+    if (authResult.code == 400 || 401 || 419 || 500) {
       console.log(authResult);
       return respond(authResult.code, {
         authResponse: authResult.authResponse,

@@ -17,7 +17,40 @@ const verifyAccessToken = async (accessToken) => {
   }
 };
 
-const func = async (ac_token) => {
-  console.log(await verifyAccessToken(ac_token));
+const getNewAccessTokenByRefreshToken = async (
+  refreshToken,
+  clientId,
+  clientSecret
+) => {
+  const url = "https://oauth2.googleapis.com/token";
+
+  const params = new URLSearchParams();
+  params.append("grant_type", "refresh_token");
+  params.append("refresh_token", refreshToken);
+  params.append("client_id", clientId);
+  params.append("client_secret", clientSecret);
+
+  try {
+    const response = await axios.post(url, params);
+    return response;
+  } catch (error) {
+    if (
+      error.response &&
+      error.response.data &&
+      error.response.data.error === "invalid_grant"
+    ) {
+      console.error("Refresh token is invalid or expired");
+    } else {
+      console.error("Error refreshing access token:", error.message);
+    }
+    throw error;
+  }
 };
-func(ac_token);
+
+const func = async () => {
+  const rf_token = "asd";
+  console.log(
+    await getNewAccessTokenByRefreshToken(rf_token, client_id, client_secret)
+  );
+};
+func();

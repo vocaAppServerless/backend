@@ -263,7 +263,7 @@ const tokenLogFuncs = {
 
       if (!matchingDocument) {
         throw new Error(
-          `The ${type} token is not in database on doesTokenLogExist`
+          `The ${type} token is not in database on doesTokenLogExist ${email}, ${refresh_token}, ${tokenValue}`
         );
       }
 
@@ -405,8 +405,8 @@ const auth = {
     let refresh_token;
     let access_token;
 
-    const client_id = cachedSecrets.client_id;
-    const client_secret = cachedSecrets.client_secret;
+    const client_id = cachedSecrets.oauthSecrets.clientId;
+    const client_secret = cachedSecrets.oauthSecrets.clientSecret;
 
     //check env
     if (process.env.ENV == "dev_sam") {
@@ -418,6 +418,7 @@ const auth = {
     }
     //contract access token string
     access_token = access_token?.replace(/^Bearer\s+/i, "");
+    refresh_token = refresh_token?.replace(/^Bearer\s+/i, "");
 
     if (refresh_token) {
       // refresh token case
@@ -442,7 +443,7 @@ const auth = {
           const { access_token, expires_in } = newAccessTokenData.data;
           const process_kind = "renew";
 
-          await saveAccessTokenLog(
+          await tokenLogFuncs.saveAccessTokenLog(
             email,
             access_token,
             expires_in,
