@@ -54,3 +54,5 @@ const func = async () => {
   );
 };
 func();
+
+{"data":{"authResponse":"success authorization"},"status":200,"statusText":"OK","headers":{"content-length":"40","content-type":"application/json"},"config":{"transitional":{"silentJSONParsing":true,"forcedJSONParsing":true,"clarifyTimeoutError":false},"adapter":["xhr","http","fetch"],"transformRequest":[null],"transformResponse":[null],"timeout":5000,"xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN","maxContentLength":-1,"maxBodyLength":-1,"env":{},"headers":{"Accept":"application/json, text/plain, */*","Content-Type":"application/json","Access-Token":"Bearer ya29.a0AeDClZBLdUbKM5778sHovifgAXkGdGFTkKUIdCzmfYemdgDvgpg8MFcfs5NNUi1t2RC3YI5AN3m2XWEGcWx_GJbRXbL0_Cl3uqZtmZDG97zVBdMfWn-OaIMGhT60jEu38g5Wr2QPsuobz30h2i5IEk4lLOzL0gSolzGJ2xgGaCgYKAcwSARESFQHGX2MiMe9tnU_8syJb8Z4zaxu4VA0175"},"baseURL":"http://localhost:3000","method":"get","url":"http://localhost:3000/test?request=testAuthFlow","params":{"email":"nurdworker%40gmail.com"}}},

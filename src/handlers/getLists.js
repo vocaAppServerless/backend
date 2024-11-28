@@ -69,8 +69,7 @@ exports.handler = async (event) => {
     cachedSecrets,
     cachedDb
   );
-  if (authResult.code == 400 || 401 || 419 || 500) {
-    console.log(authResult);
+  if ([400, 401, 419, 500].includes(authResult.code)) {
     return respond(authResult.code, {
       authResponse: authResult.authResponse,
     });

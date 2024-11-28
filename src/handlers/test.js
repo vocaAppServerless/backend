@@ -67,10 +67,6 @@ exports.handler = async (event) => {
   const requestType = event.queryStringParameters?.request;
   const email = decodeURIComponent(event.queryStringParameters?.email);
   console.log(email);
-  console.log("여기야1");
-  console.log(event.headers?.["refresh-token"]);
-  console.log(event.headers?.["access-token"]);
-  console.log("여기야2");
 
   cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
   cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
@@ -92,13 +88,13 @@ exports.handler = async (event) => {
       cachedSecrets,
       cachedDb
     );
-    if (authResult.code == 400 || 401 || 419 || 500) {
-      console.log(authResult);
+    if ([400, 401, 419, 500].includes(authResult.code)) {
       return respond(authResult.code, {
         authResponse: authResult.authResponse,
       });
     }
-  }
+  }    
+
 
   switch (requestType) {
     case "connectLambda":
