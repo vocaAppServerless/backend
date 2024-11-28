@@ -63,21 +63,22 @@ Resources:
               AllowMethods: "'GET,OPTIONS'"
               AllowHeaders: "'*'"
 
-  # ListsGet:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     Handler: src/handlers/getLists.handler
-  #     Runtime: nodejs20.x
-  #     Events:
-  #       ListsGet:
-  #         Type: Api
-  #         Properties:
-  #           Path: /lists
-  #           Method: get
-  #           Cors:
-  #             AllowOrigins: "'*'"
-  #             AllowMethods: "'GET,OPTIONS'"
-  #             AllowHeaders: "'Content-Type'"
+  ListsGet:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/getLists.handler
+      Runtime: nodejs20.x
+      Timeout: 10 # 타임아웃 시간을 10초로 설정
+      Events:
+        ListsGet:
+          Type: HttpApi
+          Properties:
+            Path: /lists
+            Method: get
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'GET,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   # ListPost:
   #   Type: AWS::Serverless::Function

@@ -71,13 +71,6 @@ exports.handler = async (event) => {
   cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
   cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
 
-  // // 미들웨어에서 요청 처리
-  // const authResult = await getOauthMiddleWareResult(event);
-
-  // if (authResult.code == 419 || authResult.code == 401) {
-  //   return respond(authResult.code, { authResponse: authResult.authResponse });
-  // }
-
   let authResult;
 
   //test존 미들웨어 조건문
@@ -93,8 +86,7 @@ exports.handler = async (event) => {
         authResponse: authResult.authResponse,
       });
     }
-  }    
-
+  }
 
   switch (requestType) {
     case "connectLambda":

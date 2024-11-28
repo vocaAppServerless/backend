@@ -29,11 +29,12 @@ const getLists = async (event, authResult, email) => {
 
     // Fetch lists for the user, sorted by most recent addition (assuming a `createdAt` field)
     const listsArr = await cachedDb
-      .collection("lists")
-      .find({ userId }) // Filter by userId
+      .collection("voca_lists")
+      .find({ user_id: userId }) // Filter by userId
       .sort({ createdAt: -1 }) // Sort by createdAt in descending order
-      .project({ _id: 1, name: 1, otherFields: 1 }) // Include _id and specific fields
       .toArray();
+
+    console.log(listsArr);
 
     // Respond with the lists
     return respond(authResult.code, {
