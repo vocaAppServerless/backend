@@ -19,6 +19,7 @@ let cachedDb = null;
 // handler funcs
 
 const handleConnectLambda = () => {
+  console.log("this log is from connect lambda test");
   return respond(200, { message: "This is the connectLambda response!" });
 };
 
@@ -66,7 +67,6 @@ const handleTestAuthFlow = async (event, authResult) => {
 exports.handler = async (event) => {
   const requestType = event.queryStringParameters?.request;
   const email = decodeURIComponent(event.queryStringParameters?.email);
-  console.log(email);
 
   cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
   cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
