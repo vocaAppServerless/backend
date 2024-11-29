@@ -80,21 +80,22 @@ Resources:
               AllowMethods: "'GET,OPTIONS'"
               AllowHeaders: "'Content-Type'"
 
-  # ListPost:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     Handler: src/handlers/postList.handler
-  #     Runtime: nodejs20.x
-  #     Events:
-  #       ListPost:
-  #         Type: Api
-  #         Properties:
-  #           Path: /list
-  #           Method: post
-  #           Cors:
-  #             AllowOrigins: "'*'"
-  #             AllowMethods: "'POST,OPTIONS'"
-  #             AllowHeaders: "'Content-Type'"
+  ListPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/postList.handler
+      Runtime: nodejs20.x
+      Timeout: 10 # 타임아웃 시간을 10초로 설정
+      Events:
+        ListPost:
+          Type: HttpApi
+          Properties:
+            Path: /list
+            Method: post
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   # WordsPost:
   #   Type: AWS::Serverless::Function

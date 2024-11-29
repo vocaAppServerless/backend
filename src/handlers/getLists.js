@@ -34,8 +34,6 @@ const getLists = async (event, authResult, email) => {
       .sort({ createdAt: -1 }) // Sort by createdAt in descending order
       .toArray();
 
-    console.log(listsArr);
-
     // Respond with the lists
     return respond(authResult.code, {
       authResponse: authResult.authResponse,

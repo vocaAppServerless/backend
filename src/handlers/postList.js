@@ -24,12 +24,44 @@ const putList = async (event, authResult, email) => {
     const queryParams = event.queryStringParameters || {};
     const requestBody = event.body ? JSON.parse(event.body) : {};
 
-    // Your code
-    // Example response with auth data
-    return respond(authResult.code, {
-      authResponse: authResult.authResponse,
-      answer: "testdata",
-    });
+    // Fetch user ID based on email from the users collection
+    const user = await cachedDb.collection("users").findOne({ email });
+    if (!user) {
+      return respond(500, { message: "User not found" });
+    }
+    const userId = user._id;
+    console.log(userId);
+
+    // Prepare the new list data
+    const newList = {
+      name: requestBody.name, // List name from request body
+      language: requestBody.language, // Language from request body
+      user_id: userId, // User ID from users collection
+      creation_date: new Date().toISOString(), // Set the current date and time
+      linked_incorrect_word_lists: [], // Empty array for linked incorrect words
+      is_deleted: false, // Default to false
+      is_bookmark: false, // Default to false
+    };
+    console.log(newList);
+
+    // Insert the new list into the voca_lists collection
+    const result = await cachedDb.collection("voca_lists").insertOne(newList);
+    console.log(result.insertedId);
+    // If insertion was successful, return the newly created list
+    if (result.insertedId) {
+      return respond(authResult.code, {
+        authResponse: authResult.authResponse,
+        answer: {
+          message: "List added successfully!",
+          list: {
+            _id: result.insertedId,
+            ...newList, // Include the list details in the response
+          },
+        },
+      });
+    } else {
+      return respond(500, { message: "Failed to add the list" });
+    }
   } catch (error) {
     // Error handler
     console.error("Error on putList:", error);
