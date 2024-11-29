@@ -19,7 +19,7 @@ let cachedDb = null;
 // handler funcs
 
 const handleConnectLambda = () => {
-  console.log("this log is from connect lambda test");
+  console.log("this log is from connect lambda test ");
   return respond(200, { message: "This is the connectLambda response!" });
 };
 
