@@ -1,4 +1,4 @@
-const { MongoClient } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
 const {
   SecretsManagerClient,
   GetSecretValueCommand,
@@ -11,7 +11,6 @@ const awsDevSecretName = process.env.AWS_DEV_SECRET_NAME;
 const awsDevSecretRegion = process.env.AWS_DEV_SECRET_REGION;
 
 // secret funcs
-
 const getSecrets = async () => {
   const env = process.env.ENV;
   const user = process.env.MONGODB_USER;
@@ -124,7 +123,6 @@ const checkCachedSecrets = async (cachedSecrets) => {
 };
 
 // db funcs
-
 const getDb = async (cachedDb, cachedSecrets) => {
   try {
     if (cachedDb && cachedSecrets) {
@@ -151,65 +149,22 @@ const getDb = async (cachedDb, cachedSecrets) => {
   }
 };
 
-// auth funcs
-
+// auth sub funcs
 const createAuthResult = (authResponse, userInfo, code) => {
   return {
     authResponse,
-    userInfo, // 사용자 정보를 추가
+    userInfo,
     code,
   };
 };
 
-// 토큰 검증 함수
-const verifyAccessToken = async (accessToken) => {
-  try {
-    const url = `https://oauth2.googleapis.com/tokeninfo?access_token=${accessToken}`;
-
-    const response = await axios.get(url);
-    return response; // access_token 정보 반환
-  } catch (error) {
-    console.error(`Error verifying access token:`, error.message);
-    throw error;
-  }
-};
-
 const calculateExpiryTime = (expiresIn) => {
-  const currentTime = Math.floor(Date.now() / 1000); // 현재 시간(초 단위)
-  const expiryTime = currentTime + expiresIn; // 만료 시간 계산
-  return expiryTime; // 유닉스 타임 형식으로 반환
+  const currentTime = Math.floor(Date.now() / 1000);
+  const expiryTime = currentTime + expiresIn;
+  return expiryTime;
 };
 
-const getNewAccessTokenByRefreshToken = async (
-  refreshToken,
-  clientId,
-  clientSecret
-) => {
-  const url = "https://oauth2.googleapis.com/token";
-
-  const params = new URLSearchParams();
-  params.append("grant_type", "refresh_token");
-  params.append("refresh_token", refreshToken);
-  params.append("client_id", clientId);
-  params.append("client_secret", clientSecret);
-
-  try {
-    const response = await axios.post(url, params);
-    return response;
-  } catch (error) {
-    if (
-      error.response &&
-      error.response.data &&
-      error.response.data.error === "invalid_grant"
-    ) {
-      console.error("Refresh token is invalid or expired");
-    } else {
-      console.error("Error refreshing access token:", error.message);
-    }
-    throw error;
-  }
-};
-
+// auth token logs funcs
 const tokenLogFuncs = {
   saveAccessTokenLog: async (
     email,
@@ -228,10 +183,16 @@ const tokenLogFuncs = {
     };
 
     try {
-      await tokenLogsCollection.insertOne(logEntry);
-      console.log("Access token log inserted successfully");
+      const result = await tokenLogsCollection.insertOne(logEntry);
+      if (result.acknowledged) {
+        console.log("Access token log inserted successfully");
+      }
     } catch (error) {
-      console.error("Error inserting access token log:", error);
+      console.error(
+        "Error inserting access token log:",
+        error.message,
+        error.stack
+      );
       throw error;
     }
   },
@@ -256,20 +217,29 @@ const tokenLogFuncs = {
     try {
       const tokenLogsCollection = cachedDb.collection("token_logs");
 
-      const matchingDocument = await tokenLogsCollection.findOne(
-        { email, token_value: tokenValue, type },
-        { sort: { _id: -1 } } // _id 기준 내림차순 정렬 (가장 최근에 생성된 데이터)
+      const limitCount = type === "access" ? 20 : 5;
+
+      // bring recent logs with email and type conditions ? customer can use 5 devices at least
+      const recentLogs = await tokenLogsCollection
+        .find({ email, type })
+        .sort({ _id: -1 })
+        .limit(limitCount)
+        .toArray();
+
+      // check the token value from the recent logs
+      const matchingDocument = recentLogs.find(
+        (log) => log.token_value === tokenValue
       );
 
       if (!matchingDocument) {
         throw new Error(
-          `The ${type} token is not in database on doesTokenLogExist`
+          `The ${type} token is not in the last 5 logs for the given email.`
         );
       }
 
       return true;
     } catch (error) {
-      console.error(`DB error on find ${type} token:`, error);
+      console.error(`DB error on finding ${type} token:`, error);
       throw error;
     }
   },
@@ -279,7 +249,7 @@ const tokenLogFuncs = {
 
       const matchingDocument = await tokenLogsCollection.findOne(
         { email, token_value: tokenValue, type },
-        { sort: { _id: -1 } } // _id 기준 내림차순 정렬 (가장 최근에 생성된 데이터)
+        { sort: { _id: -1 } }
       );
 
       if (!matchingDocument) {
@@ -288,7 +258,6 @@ const tokenLogFuncs = {
         );
       }
 
-      // now가 exp보다 클 경우 true, 작을 경우 false 반환
       return now > matchingDocument.exp;
     } catch (error) {
       console.error(`DB error on find ${type} token:`, error);
@@ -297,7 +266,48 @@ const tokenLogFuncs = {
   },
 };
 
+// main auth funcs
 const auth = {
+  verifyAccessToken: async (accessToken) => {
+    try {
+      const url = `https://oauth2.googleapis.com/tokeninfo?access_token=${accessToken}`;
+
+      const response = await axios.get(url);
+      return response;
+    } catch (error) {
+      console.error(`Error verifying access token:`, error.message);
+      throw error;
+    }
+  },
+  getNewAccessTokenByRefreshToken: async (
+    refreshToken,
+    clientId,
+    clientSecret
+  ) => {
+    const url = "https://oauth2.googleapis.com/token";
+
+    const params = new URLSearchParams();
+    params.append("grant_type", "refresh_token");
+    params.append("refresh_token", refreshToken);
+    params.append("client_id", clientId);
+    params.append("client_secret", clientSecret);
+
+    try {
+      const response = await axios.post(url, params);
+      return response;
+    } catch (error) {
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.error === "invalid_grant"
+      ) {
+        console.error("Refresh token is invalid or expired");
+      } else {
+        console.error("Error refreshing access token:", error.message);
+      }
+      throw error;
+    }
+  },
   getGoogleTokensByOauthCode: async (
     oauthCode,
     clientId,
@@ -421,80 +431,91 @@ const auth = {
     refresh_token = refresh_token?.replace(/^Bearer\s+/i, "");
 
     if (refresh_token) {
-      // refresh token case
+      // refresh token flow
       try {
-        //verify refresh token
-        // 여기에 refresh토큰으로 토큰 존재 검사
-        await tokenLogFuncs.doesTokenLogExist(
+        // check refresh token logs
+        const doesRefreshTokenLogExist = await tokenLogFuncs.doesTokenLogExist(
           cachedDb,
           email,
           refresh_token,
           "refresh"
         );
-        // refresh 토큰으로 새로운 access token요청
-        newAccessTokenData = await getNewAccessTokenByRefreshToken(
-          refresh_token,
-          client_id,
-          client_secret
+
+        // check access token is expired
+        const isAccessTokenExpired = tokenLogFuncs.isTokenExpired(
+          cachedDb,
+          email,
+          access_token,
+          "access",
+          Math.floor(Date.now() / 1000)
         );
 
-        if (newAccessTokenData.status === 200) {
-          //새로받은 access token의 token log저장
-          const { access_token, expires_in } = newAccessTokenData.data;
-          const process_kind = "renew";
-
-          await tokenLogFuncs.saveAccessTokenLog(
-            email,
-            access_token,
-            expires_in,
-            process_kind,
-            cachedDb
+        if (doesRefreshTokenLogExist && isAccessTokenExpired) {
+          // ask new access token
+          newAccessTokenData = await auth.getNewAccessTokenByRefreshToken(
+            refresh_token,
+            client_id,
+            client_secret
           );
+          if (newAccessTokenData.status === 200) {
+            const { access_token, expires_in } = newAccessTokenData.data;
+            const process_kind = "renew";
 
-          const userInfo = await auth.getGoogleUserInfoByAccessToken(
-            access_token
-          );
+            await tokenLogFuncs.saveAccessTokenLog(
+              email,
+              access_token,
+              expires_in,
+              process_kind,
+              cachedDb
+            );
 
-          return createAuthResult(
-            { message: "here is new tokens", tokens: { access_token } },
-            userInfo,
-            201
-          );
+            const userInfo = await auth.getGoogleUserInfoByAccessToken(
+              access_token
+            );
+
+            return createAuthResult(
+              { message: "here is new tokens", tokens: { access_token } },
+              userInfo,
+              201
+            );
+          }
+        } else {
+          return createAuthResult("invalid authentication", null, 401);
         }
       } catch (error) {
-        // refresh토큰과 이메일, type=refresh로 검색. 가장 최근에 있는 token_info가 인수로 받은 이메일과 refresh토큰이랑 일치하면 419, 아니면 401
+        // error case on db or server
         console.error(
-          "maybe the refresh token is expired or modified :",
+          "there is something wrong on refresh flow on getOauthMiddleWareResult",
           error
         );
         return createAuthResult(
-          error.message +
-            " / or maybe the refresh token is expired or modified",
+          "there is something wrong on refresh flow on getOauthMiddleWareResult",
           null,
           500
         );
       }
     } else if (access_token) {
-      // Access-Token이 있을 경우
+      // access token flow
       try {
-        const accessTokenResponse = await verifyAccessToken(access_token);
-        //여기서 에러던지면 바로 catch로 가니까 상관없음
+        // check access token from google api
+        const accessTokenResponse = await auth.verifyAccessToken(access_token);
+        // check the token log is exist in token logs
+        const doesAccessTokenLogExist = await tokenLogFuncs.doesTokenLogExist(
+          cachedDb,
+          email,
+          access_token,
+          "access"
+        );
 
-        if (accessTokenResponse.status === 200) {
-          // 유효한 액세스 토큰을 사용해 사용자 정보 가져오기
+        if (accessTokenResponse.status === 200 && doesAccessTokenLogExist) {
           const userInfo = await auth.getGoogleUserInfoByAccessToken(
             access_token
           );
 
-          return createAuthResult(
-            "success authorization",
-            userInfo, // 사용자 정보 포함
-            200
-          ); // 200: 인증 성공
+          return createAuthResult("success authorization", userInfo, 200);
         }
       } catch (error) {
         if (error.response?.status === 400) {
-          // 여기서 토큰 만료 혹은 위조 조건문 나눔
           if (
             tokenLogFuncs.isTokenExpired(
               cachedDb,
@@ -504,23 +525,26 @@ const auth = {
               Math.floor(Date.now() / 1000)
             )
           ) {
-            return createAuthResult("expired access token", null, 419); // 만료된 토큰
+            // if the token is expired
+            return createAuthResult("expired access token", null, 419);
           } else {
-            return createAuthResult("error", null, 400); // 위조된 토큰
+            // if the token is invalid
+            return createAuthResult("error", null, 400);
           }
         } else {
+          // if server error
           console.error("Unhandled error during token verification:", error);
-          return createAuthResult(error.message, null, 500); // 예상치 못한 에러
+          return createAuthResult(error.message, null, 500);
         }
       }
     } else {
-      return createAuthResult("failed empty", null, 401); // 401: 인증 정보 없음, userInfo는 null
+      // if there are not tokens from request header
+      return createAuthResult("failed tokens are empty", null, 401);
     }
   },
 };
 
 // api resources
-
 const apiResource = {
   headers: {
     "Access-Control-Allow-Origin": "*",
@@ -538,6 +562,7 @@ const apiResource = {
 };
 
 module.exports = {
+  ObjectId,
   checkCachedSecrets,
   getDb,
   tokenLogFuncs,

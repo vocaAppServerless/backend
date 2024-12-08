@@ -1,23 +1,22 @@
 // import necessary functions
-const {
-  checkCachedSecrets,
-  getDb,
-  auth: { getOauthMiddleWareResult },
-  apiResource: { respond },
-} = require("@nurdworker/rbm-helper");
 // const {
 //   checkCachedSecrets,
 //   getDb,
 //   auth: { getOauthMiddleWareResult },
 //   apiResource: { respond },
-// } = require("./rbm-helper");
+// } = require("@nurdworker/rbm-helper");
+const {
+  checkCachedSecrets,
+  getDb,
+  auth: { getOauthMiddleWareResult },
+  apiResource: { respond },
+} = require("./rbm-helper");
 
 // declare cached data
 let cachedSecrets = {};
 let cachedDb = null;
 
 // handlers
-
 const getLists = async (event, authResult, email) => {
   try {
     // Fetch user ID based on email from cachedDb
@@ -27,11 +26,11 @@ const getLists = async (event, authResult, email) => {
     }
     const userId = user._id;
 
-    // Fetch lists for the user, sorted by most recent addition (assuming a `createdAt` field)
+    // Fetch lists for the user, sorted by most recent addition
     const listsArr = await cachedDb
       .collection("voca_lists")
-      .find({ user_id: userId }) // Filter by userId
-      .sort({ createdAt: -1 }) // Sort by createdAt in descending order
+      .find({ user_id: userId, is_deleted: { $ne: true } })
+      .sort({ createdAt: -1 })
       .toArray();
 
     // Respond with the lists

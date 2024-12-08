@@ -1,16 +1,17 @@
 // import necessary functions
+// const {
+//   ObjectId,
+//   checkCachedSecrets,
+//   getDb,
+//   auth: { getOauthMiddleWareResult },
+//   apiResource: { respond },
+// } = require("@nurdworker/rbm-helper");
 const {
   checkCachedSecrets,
   getDb,
   auth: { getOauthMiddleWareResult },
   apiResource: { respond },
-} = require("@nurdworker/rbm-helper");
-// const {
-//   checkCachedSecrets,
-//   getDb,
-//   auth: { getOauthMiddleWareResult },
-//   apiResource: { respond },
-// } = require("./rbm-helper");
+} = require("./rbm-helper");
 
 // declare cached data
 let cachedSecrets = {};
@@ -21,7 +22,6 @@ let cachedDb = null;
 const putList = async (event, authResult, email) => {
   try {
     // Extract parameters and body
-    const queryParams = event.queryStringParameters || {};
     const requestBody = event.body ? JSON.parse(event.body) : {};
 
     // Fetch user ID based on email from the users collection
@@ -34,15 +34,14 @@ const putList = async (event, authResult, email) => {
 
     // Prepare the new list data
     const newList = {
-      name: requestBody.name, // List name from request body
-      language: requestBody.language, // Language from request body
-      user_id: userId, // User ID from users collection
-      creation_date: new Date().toISOString(), // Set the current date and time
-      linked_incorrect_word_lists: [], // Empty array for linked incorrect words
-      is_deleted: false, // Default to false
-      is_bookmark: false, // Default to false
+      name: requestBody.name,
+      language: requestBody.language,
+      user_id: userId,
+      creation_date: new Date().toISOString(),
+      linked_incorrect_word_lists: [],
+      is_deleted: false,
+      is_bookmark: false,
     };
-    console.log(newList);
 
     // Insert the new list into the voca_lists collection
     const result = await cachedDb.collection("voca_lists").insertOne(newList);
@@ -55,7 +54,7 @@ const putList = async (event, authResult, email) => {
           message: "List added successfully!",
           list: {
             _id: result.insertedId,
-            ...newList, // Include the list details in the response
+            ...newList,
           },
         },
       });
@@ -63,52 +62,9 @@ const putList = async (event, authResult, email) => {
       return respond(500, { message: "Failed to add the list" });
     }
   } catch (error) {
-    // Error handler
     console.error("Error on putList:", error);
     return respond(500, {
       message: error.message || "Failed on putList",
-    });
-  }
-};
-
-const editList = async (event, authResult, email) => {
-  try {
-    // Extract parameters and body
-    const queryParams = event.queryStringParameters || {};
-    const requestBody = event.body ? JSON.parse(event.body) : {};
-
-    // Your code
-    // Example response with auth data
-    return respond(authResult.code, {
-      authResponse: authResult.authResponse,
-      answer: "testdata",
-    });
-  } catch (error) {
-    // Error handler
-    console.error("Error on editList:", error);
-    return respond(500, {
-      message: error.message || "Failed on editList",
-    });
-  }
-};
-
-const deleteList = async (event, authResult, email) => {
-  try {
-    // Extract parameters and body
-    const queryParams = event.queryStringParameters || {};
-    const requestBody = event.body ? JSON.parse(event.body) : {};
-
-    // Your code
-    // Example response with auth data
-    return respond(authResult.code, {
-      authResponse: authResult.authResponse,
-      answer: "testdata",
-    });
-  } catch (error) {
-    // Error handler
-    console.error("Error on deleteList:", error);
-    return respond(500, {
-      message: error.message || "Failed on deleteList",
     });
   }
 };
@@ -118,6 +74,7 @@ exports.handler = async (event) => {
   //get params request and email
   const requestType = event.queryStringParameters?.request;
   const email = decodeURIComponent(event.queryStringParameters?.email);
+  console.log(email);
 
   // caching
   cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
@@ -140,12 +97,8 @@ exports.handler = async (event) => {
   switch (requestType) {
     case "putList":
       return putList(event, authResult, email);
-    case "editList":
-      return editList(event, authResult, email);
-    case "deleteList":
-      return deleteList(event, authResult, email);
     default:
       console.log("Invalid request type on lists get lambda:", requestType);
-      return respond(400, { message: "Invalid request from lists get lambda" });
+      return respond(400, { message: "Invalid request from list post lambda" });
   }
 };

@@ -1,15 +1,15 @@
-const {
-  checkCachedSecrets,
-  getDb,
-  auth: { getOauthMiddleWareResult },
-  apiResource: { respond },
-} = require("@nurdworker/rbm-helper");
 // const {
 //   checkCachedSecrets,
 //   getDb,
 //   auth: { getOauthMiddleWareResult },
 //   apiResource: { respond },
-// } = require("./rbm-helper");
+// } = require("@nurdworker/rbm-helper");
+const {
+  checkCachedSecrets,
+  getDb,
+  auth: { getOauthMiddleWareResult },
+  apiResource: { respond },
+} = require("./rbm-helper");
 
 // cached data
 
@@ -75,7 +75,7 @@ exports.handler = async (event) => {
 
   let authResult;
 
-  //test존 미들웨어 조건문
+  // middle ware condition only for test zone
   if (requestType == "testAuthFlow") {
     authResult = await getOauthMiddleWareResult(
       event,

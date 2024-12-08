@@ -62,7 +62,6 @@ Resources:
               AllowOrigins: "'*'"
               AllowMethods: "'GET,OPTIONS'"
               AllowHeaders: "'*'"
-
   ListsGet:
     Type: AWS::Serverless::Function
     Properties:
@@ -79,7 +78,22 @@ Resources:
               AllowOrigins: "'*'"
               AllowMethods: "'GET,OPTIONS'"
               AllowHeaders: "'Content-Type'"
-
+  ListsPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/postLists.handler
+      Runtime: nodejs20.x
+      Timeout: 10 # 타임아웃 시간을 10초로 설정
+      Events:
+        ListsPost:
+          Type: HttpApi
+          Properties:
+            Path: /lists
+            Method: post
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
   ListPost:
     Type: AWS::Serverless::Function
     Properties:
@@ -96,38 +110,55 @@ Resources:
               AllowOrigins: "'*'"
               AllowMethods: "'POST,OPTIONS'"
               AllowHeaders: "'Content-Type'"
+  WordsPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/postWords.handler
+      Runtime: nodejs20.x
+      Timeout: 10 # 타임아웃 시간을 10초로 설정
+      Events:
+        WordsPost:
+          Type: HttpApi
+          Properties:
+            Path: /words
+            Method: post
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
-  # WordsPost:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     Handler: src/handlers/postWords.handler
-  #     Runtime: nodejs20.x
-  #     Events:
-  #       WordsPost:
-  #         Type: Api
-  #         Properties:
-  #           Path: /words
-  #           Method: post
-  #           Cors:
-  #             AllowOrigins: "'*'"
-  #             AllowMethods: "'POST,OPTIONS'"
-  #             AllowHeaders: "'Content-Type'"
-
-  # WordPost:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     Handler: src/handlers/postWord.handler
-  #     Runtime: nodejs20.x
-  #     Events:
-  #       WordPost:
-  #         Type: Api
-  #         Properties:
-  #           Path: /word
-  #           Method: post
-  #           Cors:
-  #             AllowOrigins: "'*'"
-  #             AllowMethods: "'POST,OPTIONS'"
-  #             AllowHeaders: "'Content-Type'"
+  WordPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/postWord.handler
+      Runtime: nodejs20.x
+      Timeout: 10 # 타임아웃 시간을 10초로 설정
+      Events:
+        WordPost:
+          Type: HttpApi
+          Properties:
+            Path: /word
+            Method: post
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
+  IncorrectListPost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/postIncorrectList.handler
+      Runtime: nodejs20.x
+      Timeout: 10 # 타임아웃 시간을 10초로 설정
+      Events:
+        IncorrectListPost:
+          Type: HttpApi
+          Properties:
+            Path: /incorrectlist
+            Method: post
+            Cors:
+              AllowOrigins: "'*'"
+              AllowMethods: "'POST,OPTIONS'"
+              AllowHeaders: "'Content-Type'"
 
   # IncorrectListsGet:
   #   Type: AWS::Serverless::Function

@@ -1,22 +1,18 @@
+// const {
+//   checkCachedSecrets,
+//   getDb,
+//   tokenLogFuncs: { saveAccessTokenLog, saveRefreshTokenLog },
+//   auth: { getSignData },
+//   apiResource: { respond },
+// } = require("@nurdworker/rbm-helper");
+
 const {
   checkCachedSecrets,
   getDb,
   tokenLogFuncs: { saveAccessTokenLog, saveRefreshTokenLog },
   auth: { getSignData },
   apiResource: { respond },
-} = require("@nurdworker/rbm-helper");
-
-// const {
-//   checkCachedSecrets,
-//   getDb,
-//   tokenLogFuncs: { saveAccessTokenLog, saveRefreshTokenLog },
-//   auth: {
-//     getGoogleTokensByOauthCode,
-//     getGoogleUserInfoByAccessToken,
-//     getSignData,
-//   },
-//   apiResource: { respond },
-// } = require("./rbm-helper");
+} = require("./rbm-helper");
 
 let cachedSecrets = {};
 let cachedDb = null;
@@ -34,7 +30,7 @@ const handleExistingUser = async (existingUser, userInfo, tokens) => {
         userInfo: { email: userInfo.email },
       });
     } else {
-      // User is not banned, respond with "signIn success!"
+      // save token logs
       await saveAccessTokenLog(
         userInfo.email,
         tokens.access_token,
@@ -66,7 +62,6 @@ const handleExistingUser = async (existingUser, userInfo, tokens) => {
   } catch (error) {
     console.error("Error in handleExistingUser:", error);
 
-    // Return a generic error response
     return respond(500, {
       authResponse: "error",
       message: "An unexpected error occurred while handling the user.",
@@ -86,10 +81,10 @@ const handleNewUser = async (userInfo, tokens) => {
       is_banned: false,
     };
 
-    // 새로운 유저 삽입
+    // create new user
     const user_id = (await userCollection.insertOne(newUser)).insertedId;
 
-    // Access token 로그 저장
+    // save logs
     await saveAccessTokenLog(
       userInfo.email,
       tokens.access_token,
@@ -98,7 +93,6 @@ const handleNewUser = async (userInfo, tokens) => {
       cachedDb
     );
 
-    // Refresh token 로그 저장
     await saveRefreshTokenLog(
       userInfo.email,
       tokens.refresh_token,
@@ -106,7 +100,6 @@ const handleNewUser = async (userInfo, tokens) => {
       cachedDb
     );
 
-    // 성공 응답
     return respond(200, {
       authResponse: "signUp success!",
       userInfo: { email: userInfo.email, picture: userInfo.picture, user_id },
@@ -118,7 +111,6 @@ const handleNewUser = async (userInfo, tokens) => {
   } catch (error) {
     console.error("Error in handleNewUser:", error);
 
-    // 에러 응답 반환
     return respond(500, {
       authResponse: "error",
       message: "An unexpected error occurred during user sign-up.",
@@ -155,7 +147,6 @@ const signUpOrSignIn = async (event) => {
       codeVerifier = event.headers?.codeverifier;
     }
     const { clientId, clientSecret, redirectUri } = cachedSecrets.oauthSecrets;
-    //check header values
 
     //check necessary data
     if (
@@ -212,10 +203,9 @@ const signUpOrSignIn = async (event) => {
   }
 };
 
-// Main handler function to process requests based on query params
 exports.handler = async (event) => {
   const requestType = event.queryStringParameters?.request;
-  // 캐시된 비밀 값과 DB를 가져오는 작업
+  // bring cached data
   cachedSecrets = (await checkCachedSecrets(cachedSecrets)).secrets;
   cachedDb = (await getDb(cachedDb, cachedSecrets)).db;
 
